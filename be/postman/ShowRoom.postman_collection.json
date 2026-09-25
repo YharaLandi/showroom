@@ -1,0 +1,1555 @@
+{
+  "info": {
+    "name": "ShowRoom API",
+    "description": "API del salone ShowRoom. Eseguire prima \"0. Login\". Le richieste con un codice fra parentesi nel nome verificano un rifiuto atteso (403, 404, 400, 409): il fallimento sarebbe una risposta riuscita.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "0. Login",
+      "description": "Da eseguire per prime: salvano il token in {{jwt}}, usato da tutte le altre richieste.",
+      "item": [
+        {
+          "name": "Login SuperUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "login"
+              ]
+            },
+            "description": "Salva il token in {{jwt}}: da qui in poi le richieste partono come SuperUser.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{superuserEmail}}\",\n  \"password\": \"{{superuserPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get(\"superuserPassword\")) {",
+                  "    throw new Error(\"Variabile superuserPassword vuota: impostala nell'environment \\\"ShowRoom - Local\\\" (colonna Current value) e salva.\");",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 200) {",
+                  "    store.set(\"jwt\", pm.response.json().token);",
+                  "    store.set(\"loggatoCome\", \"SuperUser\");",
+                  "} else {",
+                  "    store.unset(\"jwt\");",
+                  "}",
+                  "pm.test(\"Login SuperUser riuscito (ora le richieste usano questo token)\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrazione utente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "register"
+              ]
+            },
+            "description": "Il ruolo lo assegna il server: aggiungere \"ruolo\": \"Admin\" al corpo non cambia niente, perche RegisterRequest non ha quel campo.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\",\n  \"nome\": \"Mario\",\n  \"cognome\": \"Rossi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Utente creato (201) o gia esistente (409)\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Utente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "login"
+              ]
+            },
+            "description": "Salva il token in {{jwt}}: da qui in poi le richieste partono come Utente.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get(\"userPassword\")) {",
+                  "    throw new Error(\"Variabile userPassword vuota: impostala nell'environment \\\"ShowRoom - Local\\\" (colonna Current value) e salva.\");",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 200) {",
+                  "    store.set(\"jwt\", pm.response.json().token);",
+                  "    store.set(\"loggatoCome\", \"Utente\");",
+                  "} else {",
+                  "    store.unset(\"jwt\");",
+                  "}",
+                  "pm.test(\"Login Utente riuscito (ora le richieste usano questo token)\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Utente (/api/user)",
+      "item": [
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me"
+              ]
+            },
+            "description": "Dati dell utente del token, senza password. Salva {{userId}}."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 200) { store.set(\"userId\", pm.response.json().id); }",
+                  "pm.test(\"Profilo restituito senza password\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "refresh"
+              ]
+            },
+            "description": "Revoca il token attuale e ne emette uno nuovo."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 200) { store.set(\"jwt\", pm.response.json().token); }",
+                  "pm.test(\"Nuovo token emesso\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Elimina il mio account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me"
+              ]
+            },
+            "description": "ATTENZIONE: cancella davvero. Spariscono profilo, preferiti, avvisi e sessioni. Da li in poi a quell indirizzo non parte piu nessuna mail."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Account eliminato\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "logout"
+              ]
+            },
+            "description": "Invalida il token della richiesta."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 200) { store.set(\"tokenRevocato\", store.get(\"jwt\")); store.unset(\"jwt\"); }",
+                  "pm.test(\"Logout riuscito\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me con token revocato (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me"
+              ]
+            },
+            "description": "Da eseguire dopo il logout: il token non vale piu, anche se non e ancora scaduto."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Token revocato rifiutato\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Marche (/api/marche)",
+      "item": [
+        {
+          "name": "Elenco marche (pubblico)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/marche",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "marche"
+              ]
+            },
+            "description": "Serve al menu a tendina dei filtri, anche a chi non ha fatto l accesso.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 200 && pm.response.json().length) { store.set(\"marcaId\", pm.response.json()[0].id); }",
+                  "pm.test(\"Elenco restituito\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crea marca (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/marche",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "marche"
+              ]
+            },
+            "description": "Richiede Admin o SuperUser. Salva {{marcaId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"{{marcaNome}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 201) { store.set(\"marcaId\", pm.response.json().id); }",
+                  "pm.test(\"Marca creata\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Auto (/api/auto)",
+      "item": [
+        {
+          "name": "Catalogo pubblico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto?page=0&size=12&sort=createdAt,desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "12"
+                },
+                {
+                  "key": "sort",
+                  "value": "createdAt,desc"
+                }
+              ]
+            },
+            "description": "Le bozze non compaiono, e non esiste un parametro per farle comparire.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Catalogo restituito\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ricerca con filtri e ordinamento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto?q=panda&prezzoMax=15000&sort=prezzo,asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "panda"
+                },
+                {
+                  "key": "prezzoMax",
+                  "value": "15000"
+                },
+                {
+                  "key": "sort",
+                  "value": "prezzo,asc"
+                }
+              ]
+            },
+            "description": "I filtri diventano predicati JPA: niente viene concatenato nella query.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Ricerca riuscita\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ordinamento non consentito (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto?sort=prezzoAcquisto,asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "prezzoAcquisto,asc"
+                }
+              ]
+            },
+            "description": "Il campo su cui ordinare arriva dal client e si confronta con un elenco chiuso: tutto il resto e 400. Qui si tenta di ordinare per un campo che il pubblico non deve nemmeno vedere.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Colonna fuori elenco rifiutata\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crea auto (Admin, nasce bozza)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto"
+              ]
+            },
+            "description": "Nasce sempre come bozza: non c e un campo per pubblicarla subito. Salva {{autoId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telaio\": \"{{telaio}}\",\n  \"marcaId\": \"{{marcaId}}\",\n  \"modello\": \"Panda 1.2\",\n  \"annoImmatricolazione\": 2019,\n  \"chilometraggio\": 68000,\n  \"alimentazione\": \"BENZINA\",\n  \"prezzo\": 8500,\n  \"prezzoAcquisto\": 6200,\n  \"descrizione\": \"Unico proprietario, tagliandi certificati.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 201) { store.set(\"autoId\", pm.response.json().id); }",
+                  "pm.test(\"Auto creata come bozza\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dettaglio di una bozza (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto/{{autoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto",
+                "{{autoId}}"
+              ]
+            },
+            "description": "Una bozza non ha pagina pubblica: chi ne indovina l id riceve 404, come per un auto inesistente.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Bozza invisibile al pubblico\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pubblica auto (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto/{{autoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto",
+                "{{autoId}}"
+              ]
+            },
+            "description": "Da qui l auto entra in catalogo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bozza\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Auto pubblicata\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dettaglio pubblico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto/{{autoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto",
+                "{{autoId}}"
+              ]
+            },
+            "description": "La risposta pubblica non ha i campi prezzoAcquisto e bozza: non esistono nel DTO.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Dettaglio restituito\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"prezzoAcquisto non esce mai al pubblico\", () => pm.expect(pm.response.json()).to.not.have.property(\"prezzoAcquisto\"));",
+                  "pm.test(\"bozza non esce mai al pubblico\", () => pm.expect(pm.response.json()).to.not.have.property(\"bozza\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catalogo amministrativo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto",
+                "admin"
+              ]
+            },
+            "description": "Qui compaiono anche le bozze e il prezzo d acquisto. Richiede Admin o SuperUser."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Catalogo admin restituito\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cambia prezzo (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto/{{autoId}}/prezzo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto",
+                "{{autoId}}",
+                "prezzo"
+              ]
+            },
+            "description": "Se il prezzo scende sotto la soglia di un avviso, dopo il commit parte una mail. Salvare di nuovo lo stesso prezzo non manda niente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prezzo\": 6400\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Prezzo aggiornato\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Utente cambia prezzo (403)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auto/{{autoId}}/prezzo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auto",
+                "{{autoId}}",
+                "prezzo"
+              ]
+            },
+            "description": "Da eseguire dopo \"Login Utente\": cambiare il prezzo spetta all amministratore.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prezzo\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Utente non autorizzato a cambiare il prezzo\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Preferiti (/api/preferiti)",
+      "item": [
+        {
+          "name": "I miei preferiti",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/preferiti?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "preferiti"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Solo i propri: il proprietario e chi presenta il token, non un parametro."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Elenco restituito\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aggiungi ai preferiti",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/preferiti",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "preferiti"
+              ]
+            },
+            "description": "Nel corpo c e solo l auto: un eventuale userId verrebbe ignorato.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"autoId\": \"{{autoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 201) { store.set(\"preferitoId\", pm.response.json().id); }",
+                  "pm.test(\"Preferito aggiunto\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stesso preferito due volte (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/preferiti",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "preferiti"
+              ]
+            },
+            "description": "A fermarlo c e un vincolo unico nel database, non solo un controllo applicativo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"autoId\": \"{{autoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Doppione rifiutato\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rimuovi preferito",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/preferiti/{{preferitoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "preferiti",
+                "{{preferitoId}}"
+              ]
+            },
+            "description": "Cercato per identificativo e proprietario: quello di un altro utente da 404."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Preferito rimosso\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Avvisi (/api/avvisi)",
+      "item": [
+        {
+          "name": "I miei avvisi",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/avvisi?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "avvisi"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Elenco restituito\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crea avviso di prezzo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/avvisi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "avvisi"
+              ]
+            },
+            "description": "Nel corpo solo auto e soglia. Aggiungere \"inviato\": true o \"userId\" non cambia niente: NuovoAvvisoRequest non ha quei campi.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"autoId\": \"{{autoId}}\",\n  \"soglia\": 7000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const store = (pm.environment.name ? pm.environment : pm.collectionVariables);",
+                  "if (pm.response.code === 201) { store.set(\"avvisoId\", pm.response.json().id); }",
+                  "pm.test(\"Avviso creato\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dettaglio avviso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/avvisi/{{avvisoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "avvisi",
+                "{{avvisoId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Avviso restituito\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Avviso di un altro utente (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/avvisi/00000000-0000-0000-0000-000000000001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "avvisi",
+                "00000000-0000-0000-0000-000000000001"
+              ]
+            },
+            "description": "Gli avvisi si cercano per identificativo e proprietario insieme: 404 e non 403, cosi non si scopre nemmeno che quell avviso esiste."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Avviso altrui invisibile\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cambia soglia",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/avvisi/{{avvisoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "avvisi",
+                "{{avvisoId}}"
+              ]
+            },
+            "description": "Cambiare la soglia rimette l avviso in attesa: chi era gia stato avvisato verra avvisato di nuovo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"soglia\": 6500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Soglia aggiornata\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Avviso rimesso in attesa\", () => pm.expect(pm.response.json().inviato).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Disattiva con token (dal link della mail)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/avvisi/disattiva?token={{tokenAvviso}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "avvisi",
+                "disattiva"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAvviso}}"
+                }
+              ]
+            },
+            "description": "Non serve l accesso: chi apre la mail puo non essere collegato. A proteggerlo e il token casuale, che vale una volta sola. Incolla in {{tokenAvviso}} il valore che trovi nel link della mail ricevuta.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Disattivato (204) oppure link gia usato (404)\", () => pm.expect([204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Elimina avviso",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/avvisi/{{avvisoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "avvisi",
+                "{{avvisoId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Avviso eliminato\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Ruoli (/api/role)",
+      "description": "Riservate al SuperUser: eseguire dopo \"Login SuperUser\".",
+      "item": [
+        {
+          "name": "Crea ruolo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "role"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ruolo\": \"Venditore\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Ruolo creato (201) o gia esistente (409)\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Promuovi ad Admin",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/role/grantAdmin/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "role",
+                "grantAdmin",
+                "{{userId}}"
+              ]
+            },
+            "description": "I ruoli stanno nel token: la promozione revoca le sessioni attive, cosi al prossimo accesso il token porta i ruoli aggiornati."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Promosso (201) o gia Admin (409)\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revoca Admin",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/role/revokeAdmin/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "role",
+                "revokeAdmin",
+                "{{userId}}"
+              ]
+            },
+            "description": "Anche la revoca invalida le sessioni: chi e stato degradato non resta Admin fino alla scadenza."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Revocato (204) o non era Admin (404)\", () => pm.expect([204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Promuovi ad Admin da utente normale (403)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/role/grantAdmin/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "role",
+                "grantAdmin",
+                "{{userId}}"
+              ]
+            },
+            "description": "Da eseguire dopo \"Login Utente\": solo il SuperUser assegna i ruoli."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Utente non autorizzato\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Stato e salute",
+      "item": [
+        {
+          "name": "Stato",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stato",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stato"
+              ]
+            },
+            "description": "Nome del database collegato e ora del server.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Servizio attivo\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Health (usato da Render)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Deve restare pubblico e rispondere UP: e l indirizzo che Render usa come health check.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Health pubblico e UP\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Stato UP\", () => pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "superuserEmail",
+      "value": "superuser@showroom.it"
+    },
+    {
+      "key": "userEmail",
+      "value": "mario.rossi@test.it"
+    },
+    {
+      "key": "userPassword",
+      "value": "password123"
+    },
+    {
+      "key": "marcaNome",
+      "value": "Fiat"
+    },
+    {
+      "key": "telaio",
+      "value": "ZFA31200000123456"
+    }
+  ]
+}
