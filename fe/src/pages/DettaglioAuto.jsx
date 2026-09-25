@@ -4,6 +4,7 @@ import Messaggio from '@/components/Messaggio'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { alimentazione, euro, km } from '@/lib/formato'
+import { immagineAuto } from '@/lib/immagini'
 
 export default function DettaglioAuto() {
   const { id } = useParams()
@@ -61,7 +62,15 @@ export default function DettaglioAuto() {
         Torna al catalogo
       </Link>
 
-      <h1 className="mt-3 text-2xl font-semibold tracking-tight">
+      <div className="mt-3 aspect-[16/9] overflow-hidden rounded-lg bg-slate-100">
+        <img
+          src={immagineAuto(auto.marca, auto.modello, { larghezza: 1200 })}
+          alt={`${auto.marca} ${auto.modello}`}
+          className="h-full w-full object-cover"
+        />
+      </div>
+
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight">
         {auto.marca} {auto.modello}
       </h1>
       <p className="mt-1 text-3xl font-semibold">{euro(auto.prezzo)}</p>

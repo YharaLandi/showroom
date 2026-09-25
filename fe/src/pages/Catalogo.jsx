@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AutoCard from '@/components/AutoCard'
 import Messaggio from '@/components/Messaggio'
 import Paginazione from '@/components/Paginazione'
 import { api } from '@/lib/api'
+import { useAuth } from '@/lib/auth'
+import { alimentazione as etichettaAlimentazione, euro, km } from '@/lib/formato'
+import { immagineAuto } from '@/lib/immagini'
 
 // Gli stessi nomi che il backend accetta in SORT_CONSENTITI: qualunque altro
 // valore riceverebbe 400, quindi qui si scelgono da un elenco chiuso.
@@ -11,13 +15,16 @@ const ORDINAMENTI = [
   { valore: 'prezzo,asc', etichetta: 'Prezzo crescente' },
   { valore: 'prezzo,desc', etichetta: 'Prezzo decrescente' },
   { valore: 'chilometraggio,asc', etichetta: 'Meno chilometri' },
-  { valore: 'annoImmatricolazione,desc', etichetta: 'Piu' + '\u2019' + ' recenti' },
+  { valore: 'annoImmatricolazione,desc', etichetta: 'Piu' + '’' + ' recenti' },
   { valore: 'marca,asc', etichetta: 'Marca (A-Z)' },
 ]
 
 const FILTRI_VUOTI = { q: '', marcaId: '', alimentazione: '', prezzoMax: '', kmMax: '' }
 
 export default function Catalogo() {
+  const { collegato } = useAuth()
+  const navigate = useNavigate()
+
   const [filtri, setFiltri] = useState(FILTRI_VUOTI)
   const [ordine, setOrdine] = useState('createdAt,desc')
   const [pagina, setPagina] = useState(0)
@@ -26,9 +33,41 @@ export default function Catalogo() {
   const [errore, setErrore] = useState(null)
   const [caricamento, setCaricamento] = useState(true)
 
+  const [inEvidenza, setInEvidenza] = useState(null)
+  const [preferiti, setPreferiti] = useState({}) // { autoId: preferitoId }
+
   useEffect(() => {
     api.marche().then(setMarche).catch(() => setMarche([]))
   }, [])
+
+  // L'auto in evidenza e' sempre l'ultima arrivata, indipendente da filtri e
+  // pagina: cosi' l'hero non salta quando si cerca o si cambia pagina sotto.
+  useEffect(() => {
+    api
+      .catalogo({ sort: 'createdAt,desc', page: 0, size: 1 })
+      .then((d) => setInEvidenza(d.content[0] ?? null))
+      .catch(() => setInEvidenza(null))
+  }, [])
+
+  // Solo per sapere quali cuori mostrare pieni: prende la prima pagina dei
+  // preferiti. Con piu' di 20 preferiti quelli oltre non risultano pieni qui,
+  // ma restano comunque nella pagina Preferiti.
+  useEffect(() => {
+    if (!collegato) {
+      setPreferiti({})
+      return
+    }
+    api
+      .preferiti(0)
+      .then((r) => {
+        const mappa = {}
+        r.content.forEach((p) => {
+          mappa[p.auto.id] = p.id
+        })
+        setPreferiti(mappa)
+      })
+      .catch(() => setPreferiti({}))
+  }, [collegato])
 
   useEffect(() => {
     setCaricamento(true)
@@ -49,21 +88,104 @@ export default function Catalogo() {
     setPagina(0)
   }
 
+  async function alternaPreferito(auto) {
+    if (!collegato) {
+      navigate('/accedi')
+      return
+    }
+    const idPreferito = preferiti[auto.id]
+    try {
+      if (idPreferito) {
+        await api.rimuoviPreferito(idPreferito)
+        setPreferiti((p) => {
+          const nuovi = { ...p }
+          delete nuovi[auto.id]
+          return nuovi
+        })
+      } else {
+        const creato = await api.aggiungiPreferito(auto.id)
+        setPreferiti((p) => ({ ...p, [auto.id]: creato.id }))
+      }
+    } catch (e) {
+      setErrore(e.message)
+    }
+  }
+
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Le nostre auto</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Cerca fra le auto disponibili. Con un account puoi salvarle fra i preferiti e farti avvisare
-        quando il prezzo scende.
-      </p>
+      {inEvidenza && (
+        <section
+          onClick={() => navigate(`/auto/${inEvidenza.id}`)}
+          className="relative -mx-4 mb-10 cursor-pointer overflow-hidden sm:-mx-4"
+        >
+          <div className="relative aspect-[16/9] w-full sm:aspect-[21/9]">
+            <img
+              src={immagineAuto(inEvidenza.marca, inEvidenza.modello, { larghezza: 1600 })}
+              alt={`${inEvidenza.marca} ${inEvidenza.modello}`}
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent" />
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 px-4 pb-6 sm:px-8 sm:pb-8">
+            <div className="text-xs font-medium uppercase tracking-wide text-red-600">
+              Nuovo arrivo · {inEvidenza.annoImmatricolazione}
+            </div>
+            <h1 className="mt-1 text-3xl font-bold uppercase leading-none tracking-tight sm:text-5xl">
+              {inEvidenza.marca} {inEvidenza.modello}
+            </h1>
+
+            <div className="mt-4 flex flex-wrap gap-8 border-t border-slate-300 pt-4 text-sm">
+              <div>
+                <div className="text-xs uppercase tracking-wide text-slate-500">Anno</div>
+                <div className="mt-0.5 font-medium">{inEvidenza.annoImmatricolazione}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wide text-slate-500">Chilometri</div>
+                <div className="mt-0.5 font-medium">{km(inEvidenza.chilometraggio)}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wide text-slate-500">Alimentazione</div>
+                <div className="mt-0.5 font-medium">{etichettaAlimentazione(inEvidenza.alimentazione)}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wide text-slate-500">Prezzo</div>
+                <div className="mt-0.5 font-semibold">{euro(inEvidenza.prezzo)}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <div className="flex items-baseline justify-between gap-4">
+        <div>
+          <div className="text-xs font-medium uppercase tracking-wide text-red-600">Collezione</div>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight">Le nostre auto</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Cerca fra le auto disponibili. Con un account puoi salvarle fra i preferiti e farti avvisare
+            quando il prezzo scende.
+          </p>
+        </div>
+      </div>
 
       <div className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-6">
-        <input
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm lg:col-span-2"
-          placeholder="Marca, modello o descrizione"
-          value={filtri.q}
-          onChange={(e) => aggiorna('q', e.target.value)}
-        />
+        <div className="relative lg:col-span-2">
+          <svg
+            viewBox="0 0 24 24"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 stroke-slate-400"
+            fill="none"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path strokeLinecap="round" d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            className="w-full rounded-md border border-slate-300 py-2 pl-9 pr-3 text-sm"
+            placeholder="Marca, modello o descrizione"
+            value={filtri.q}
+            onChange={(e) => aggiorna('q', e.target.value)}
+          />
+        </div>
         <select
           className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           value={filtri.marcaId}
@@ -126,12 +248,15 @@ export default function Catalogo() {
 
       {!caricamento && risultato && risultato.content.length > 0 && (
         <>
-          <p className="mt-6 text-sm text-slate-500">
-            {risultato.totalElements} auto in catalogo
-          </p>
+          <p className="mt-6 text-sm text-slate-500">{risultato.totalElements} auto in catalogo</p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {risultato.content.map((auto) => (
-              <AutoCard key={auto.id} auto={auto} />
+              <AutoCard
+                key={auto.id}
+                auto={auto}
+                preferito={Boolean(preferiti[auto.id])}
+                onToggleFavorite={alternaPreferito}
+              />
             ))}
           </div>
           <Paginazione pagina={risultato.page} totalePagine={risultato.totalPages} onCambia={setPagina} />
