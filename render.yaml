@@ -1,0 +1,71 @@
+# Blueprint Render: database + backend + frontend.
+# Su Render: New > Blueprint > repository > Apply.
+# Rinominare showroom-db / showroom-be / showroom-fe con il nome del progetto.
+
+databases:
+  - name: showroom-db
+    databaseName: showroom
+    user: showroom
+    plan: free
+    region: frankfurt
+
+services:
+  # ---------- Backend: Spring Boot via Docker ----------
+  - type: web
+    name: showroom-be
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: be
+    # dockerfilePath parte da rootDir; buildFilter dalla radice della repo.
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    buildFilter:
+      paths:
+        - be/**
+        - render.yaml
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: showroom-db
+          property: connectionString
+      # Origine del FE per il CORS, es. https://showroom-fe.onrender.com
+      - key: ALLOWED_ORIGIN
+        sync: false
+      # Indirizzo del FE usato nei link delle mail di avviso. Senza, i link di
+      # disattivazione punterebbero a localhost e non funzionerebbero per nessuno.
+      - key: FRONTEND_URL
+        sync: false
+      # Firma dei JWT (HS256, >= 32 byte): Render genera un valore casuale.
+      - key: JWT_SECRET
+        generateValue: true
+      # Credenziali del SuperUser creato all'avvio da DataInitializer.
+      - key: SUPERUSER_EMAIL
+        sync: false
+      - key: SUPERUSER_PASSWORD
+        sync: false
+      # Gmail per gli avvisi di prezzo: password per le app, mai in application.properties.
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+  # ---------- Frontend: build Vite statica ----------
+  - type: web
+    name: showroom-fe
+    runtime: static
+    rootDir: fe
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    buildFilter:
+      paths:
+        - fe/**
+        - render.yaml
+    envVars:
+      # Indirizzo del BE, es. https://showroom-be.onrender.com (senza / finale)
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

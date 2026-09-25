@@ -1,0 +1,106 @@
+// In sviluppo BASE e' vuota e il proxy di Vite inoltra /api alla 8080.
+// In produzione arriva da VITE_API_URL, iniettata durante la build.
+const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
+
+const CHIAVE_TOKEN = 'showroom.token'
+
+export function leggiToken() {
+  return localStorage.getItem(CHIAVE_TOKEN)
+}
+
+export function salvaToken(token) {
+  localStorage.setItem(CHIAVE_TOKEN, token)
+}
+
+export function dimenticaToken() {
+  localStorage.removeItem(CHIAVE_TOKEN)
+}
+
+export class ErroreApi extends Error {
+  constructor(stato, messaggio, campi) {
+    super(messaggio)
+    this.stato = stato
+    this.campi = campi
+  }
+}
+
+async function chiama(percorso, opzioni = {}) {
+  const token = leggiToken()
+  const risposta = await fetch(`${BASE}${percorso}`, {
+    ...opzioni,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...opzioni.headers,
+    },
+  })
+
+  if (!risposta.ok) {
+    let messaggio = `${risposta.status} ${risposta.statusText}`
+    let campi
+    try {
+      const corpo = await risposta.json()
+      // GlobalExceptionHandler risponde { status, errors: { campo: motivo } }
+      if (corpo.errors) {
+        campi = corpo.errors
+        messaggio = 'Controlla i campi segnalati'
+      } else if (corpo.message) {
+        messaggio = corpo.message
+      }
+    } catch {
+      // corpo non JSON: resta il messaggio di stato
+    }
+    throw new ErroreApi(risposta.status, messaggio, campi)
+  }
+
+  return risposta.status === 204 ? undefined : risposta.json()
+}
+
+const corpo = (dati) => ({ body: JSON.stringify(dati) })
+
+// I filtri vuoti non finiscono nella query string, cosi' l'indirizzo resta leggibile
+function query(parametri) {
+  const q = new URLSearchParams()
+  Object.entries(parametri).forEach(([chiave, valore]) => {
+    if (valore !== '' && valore !== null && valore !== undefined) q.append(chiave, valore)
+  })
+  const s = q.toString()
+  return s ? `?${s}` : ''
+}
+
+export const api = {
+  indirizzo: BASE || '(stessa origine, proxy di Vite)',
+  stato: () => chiama('/api/stato'),
+
+  // ---------- accesso ----------
+  login: (username, password) => chiama('/api/user/login', { method: 'POST', ...corpo({ username, password }) }),
+  registra: (dati) => chiama('/api/user/register', { method: 'POST', ...corpo(dati) }),
+  logout: () => chiama('/api/user/logout', { method: 'POST' }),
+  me: () => chiama('/api/user/me'),
+  eliminaAccount: () => chiama('/api/user/me', { method: 'DELETE' }),
+
+  // ---------- catalogo ----------
+  marche: () => chiama('/api/marche'),
+  catalogo: (filtri) => chiama(`/api/auto${query(filtri)}`),
+  auto: (id) => chiama(`/api/auto/${id}`),
+
+  // ---------- area amministrativa ----------
+  catalogoAdmin: (filtri) => chiama(`/api/auto/admin${query(filtri)}`),
+  nuovaAuto: (dati) => chiama('/api/auto', { method: 'POST', ...corpo(dati) }),
+  modificaAuto: (id, dati) => chiama(`/api/auto/${id}`, { method: 'PATCH', ...corpo(dati) }),
+  cambiaPrezzo: (id, prezzo) => chiama(`/api/auto/${id}/prezzo`, { method: 'PATCH', ...corpo({ prezzo }) }),
+  nuovaMarca: (nome) => chiama('/api/marche', { method: 'POST', ...corpo({ nome }) }),
+
+  // ---------- preferiti ----------
+  preferiti: (pagina = 0) => chiama(`/api/preferiti?page=${pagina}&size=20`),
+  aggiungiPreferito: (autoId) => chiama('/api/preferiti', { method: 'POST', ...corpo({ autoId }) }),
+  rimuoviPreferito: (id) => chiama(`/api/preferiti/${id}`, { method: 'DELETE' }),
+
+  // ---------- avvisi ----------
+  avvisi: (pagina = 0) => chiama(`/api/avvisi?page=${pagina}&size=20`),
+  nuovoAvviso: (autoId, soglia) => chiama('/api/avvisi', { method: 'POST', ...corpo({ autoId, soglia }) }),
+  modificaAvviso: (id, soglia) => chiama(`/api/avvisi/${id}`, { method: 'PATCH', ...corpo({ soglia }) }),
+  eliminaAvviso: (id) => chiama(`/api/avvisi/${id}`, { method: 'DELETE' }),
+  disattivaAvviso: (token) =>
+    chiama(`/api/avvisi/disattiva?token=${encodeURIComponent(token)}`, { method: 'POST' }),
+}
