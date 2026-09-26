@@ -122,9 +122,9 @@ export default function Catalogo() {
           onClick={() => navigate(`/auto/${inEvidenza.id}`)}
           className="relative -mx-4 mb-10 cursor-pointer overflow-hidden sm:-mx-4"
         >
-          <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 sm:aspect-[21/9]">
+          <div className="relative aspect-[16/9] w-full overflow-hidden bg-app-border/40 sm:aspect-[21/9]">
             {immagineHero.caricamento ? (
-              <div className="h-full w-full animate-pulse bg-slate-200" />
+              <div className="h-full w-full animate-pulse bg-app-border/60" />
             ) : immagineHero.src ? (
               <img
                 src={immagineHero.src}
@@ -132,45 +132,45 @@ export default function Catalogo() {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
-                <span className="text-lg font-medium uppercase tracking-wide text-slate-300">
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-app-fg to-app-draft">
+                <span className="font-mono text-lg font-medium uppercase tracking-wider text-white/70">
                   {inEvidenza.marca} {inEvidenza.modello}
                 </span>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-app-bg via-app-bg/40 to-transparent" />
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 px-4 pb-6 sm:px-8 sm:pb-8">
-            <div className="text-xs font-medium uppercase tracking-wide text-red-600">
-              {inEvidenza.stato === 'NUOVO' ? 'Nuovo arrivo' : 'In evidenza'} · {inEvidenza.annoImmatricolazione}
+            <div className="font-mono text-xs font-medium uppercase tracking-wider text-app-accent">
+              {inEvidenza.stato === 'NUOVO' ? 'Nuovo arrivo' : 'In evidenza'} / {inEvidenza.annoImmatricolazione}
             </div>
-            <h1 className="mt-1 text-3xl font-bold uppercase leading-none tracking-tight sm:text-5xl">
+            <h1 className="mt-1 font-display text-3xl font-black uppercase leading-none tracking-tight sm:text-5xl">
               {inEvidenza.marca} {inEvidenza.modello}
             </h1>
 
-            <div className="mt-4 flex flex-wrap gap-8 border-t border-slate-300 pt-4 text-sm">
+            <div className="mt-4 flex flex-wrap gap-8 border-t border-app-border pt-4 text-sm">
               {inEvidenza.potenza != null && (
                 <div>
-                  <div className="text-xs uppercase tracking-wide text-slate-500">Potenza</div>
-                  <div className="mt-0.5 font-medium">{formatoPotenza(inEvidenza.potenza)}</div>
+                  <div className="font-mono text-xs uppercase tracking-wider text-app-muted">Potenza</div>
+                  <div className="mt-0.5 font-display font-bold">{formatoPotenza(inEvidenza.potenza)}</div>
                 </div>
               )}
               <div>
-                <div className="text-xs uppercase tracking-wide text-slate-500">Anno</div>
-                <div className="mt-0.5 font-medium">{inEvidenza.annoImmatricolazione}</div>
+                <div className="font-mono text-xs uppercase tracking-wider text-app-muted">Anno</div>
+                <div className="mt-0.5 font-display font-bold">{inEvidenza.annoImmatricolazione}</div>
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-slate-500">Chilometri</div>
-                <div className="mt-0.5 font-medium">{km(inEvidenza.chilometraggio)}</div>
+                <div className="font-mono text-xs uppercase tracking-wider text-app-muted">Chilometri</div>
+                <div className="mt-0.5 font-display font-bold">{km(inEvidenza.chilometraggio)}</div>
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-slate-500">Alimentazione</div>
-                <div className="mt-0.5 font-medium">{etichettaAlimentazione(inEvidenza.alimentazione)}</div>
+                <div className="font-mono text-xs uppercase tracking-wider text-app-muted">Alimentazione</div>
+                <div className="mt-0.5 font-display font-bold">{etichettaAlimentazione(inEvidenza.alimentazione)}</div>
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-slate-500">Prezzo</div>
-                <div className="mt-0.5 font-semibold">{euro(inEvidenza.prezzo)}</div>
+                <div className="font-mono text-xs uppercase tracking-wider text-app-muted">Prezzo</div>
+                <div className="mt-0.5 font-display font-bold">{euro(inEvidenza.prezzo)}</div>
               </div>
             </div>
           </div>
@@ -179,20 +179,20 @@ export default function Catalogo() {
 
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-red-600">Collezione</div>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight">Le nostre auto</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <div className="font-mono text-xs font-medium uppercase tracking-wider text-app-accent">Collezione</div>
+          <h2 className="mt-1 font-display text-2xl font-bold tracking-tight">Le nostre auto</h2>
+          <p className="mt-1 text-sm text-app-muted">
             Cerca fra le auto disponibili. Con un account puoi salvarle fra i preferiti e farti avvisare
             quando il prezzo scende.
           </p>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="mt-6 grid gap-3 rounded-lg border border-app-border bg-white p-4 sm:grid-cols-2 lg:grid-cols-6">
         <div className="relative lg:col-span-2">
           <svg
             viewBox="0 0 24 24"
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 stroke-slate-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 stroke-app-muted"
             fill="none"
             strokeWidth="2"
           >
@@ -200,14 +200,14 @@ export default function Catalogo() {
             <path strokeLinecap="round" d="m20 20-3.5-3.5" />
           </svg>
           <input
-            className="w-full rounded-md border border-slate-300 py-2 pl-9 pr-3 text-sm"
+            className="w-full rounded-lg border border-app-border py-2 pl-9 pr-3 font-mono text-sm"
             placeholder="Marca, modello o descrizione"
             value={filtri.q}
             onChange={(e) => aggiorna('q', e.target.value)}
           />
         </div>
         <select
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-app-border px-3 py-2 font-mono text-sm uppercase tracking-wide"
           value={filtri.marcaId}
           onChange={(e) => aggiorna('marcaId', e.target.value)}
         >
@@ -219,7 +219,7 @@ export default function Catalogo() {
           ))}
         </select>
         <select
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-app-border px-3 py-2 font-mono text-sm uppercase tracking-wide"
           value={filtri.alimentazione}
           onChange={(e) => aggiorna('alimentazione', e.target.value)}
         >
@@ -233,13 +233,13 @@ export default function Catalogo() {
         <input
           type="number"
           min="0"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-app-border px-3 py-2 font-mono text-sm"
           placeholder="Prezzo max"
           value={filtri.prezzoMax}
           onChange={(e) => aggiorna('prezzoMax', e.target.value)}
         />
         <select
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-app-border px-3 py-2 font-mono text-sm uppercase tracking-wide"
           value={ordine}
           onChange={(e) => {
             setOrdine(e.target.value)
@@ -258,17 +258,19 @@ export default function Catalogo() {
         <Messaggio>{errore}</Messaggio>
       </div>
 
-      {caricamento && <p className="mt-6 text-sm text-slate-500">Caricamento...</p>}
+      {caricamento && <p className="mt-6 text-sm text-app-muted">Caricamento...</p>}
 
       {!caricamento && risultato && risultato.content.length === 0 && (
-        <p className="mt-6 rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
+        <p className="mt-6 rounded-lg border border-app-border bg-white p-6 text-center text-sm text-app-muted">
           Nessuna auto corrisponde a questa ricerca.
         </p>
       )}
 
       {!caricamento && risultato && risultato.content.length > 0 && (
         <>
-          <p className="mt-6 text-sm text-slate-500">{risultato.totalElements} auto in catalogo</p>
+          <p className="mt-6 font-mono text-xs uppercase tracking-wider text-app-muted">
+            {risultato.totalElements} auto in catalogo
+          </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {risultato.content.map((auto) => (
               <AutoCard

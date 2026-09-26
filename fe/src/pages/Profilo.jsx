@@ -29,33 +29,33 @@ export default function Profilo() {
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Il tuo profilo</h1>
+      <h1 className="font-display text-2xl font-black uppercase tracking-tight">Il tuo profilo</h1>
 
-      <dl className="mt-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm">
+      <dl className="mt-6 space-y-3 rounded-lg border border-app-border bg-white p-4 text-sm">
         <div className="flex justify-between gap-4">
-          <dt className="text-slate-500">Nome</dt>
+          <dt className="font-mono text-xs uppercase tracking-wider text-app-muted">Nome</dt>
           <dd className="font-medium">
             {utente.nome} {utente.cognome}
           </dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-slate-500">Email</dt>
+          <dt className="font-mono text-xs uppercase tracking-wider text-app-muted">Email</dt>
           <dd className="font-medium">{utente.email}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-slate-500">Ruolo</dt>
+          <dt className="font-mono text-xs uppercase tracking-wider text-app-muted">Ruolo</dt>
           <dd className="font-medium">{utente.ruoli.join(', ')}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-slate-500">Iscritto dal</dt>
+          <dt className="font-mono text-xs uppercase tracking-wider text-app-muted">Iscritto dal</dt>
           <dd className="font-medium">{data(utente.createdAt)}</dd>
         </div>
       </dl>
 
-      <p className="mt-4 text-sm text-slate-600">
+      <p className="mt-4 text-sm text-app-muted">
         Questi sono tutti i dati che conserviamo su di te, oltre a preferiti e soglie. Il dettaglio
         completo e{'\u2019'} nella{' '}
-        <Link to="/privacy" className="underline">
+        <Link to="/privacy" className="text-app-fg underline">
           Privacy Policy
         </Link>
         .
@@ -77,13 +77,13 @@ export default function Profilo() {
             <button
               onClick={elimina}
               disabled={inCorso}
-              className="rounded-md bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+              className="rounded-lg bg-red-600 px-3 py-2 font-mono text-xs uppercase tracking-wider text-white hover:bg-red-700 disabled:opacity-50"
             >
               {inCorso ? 'Eliminazione...' : 'Si' + '\u2019' + ', elimina tutto'}
             </button>
             <button
               onClick={() => setConferma(false)}
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50"
+              className="rounded-lg border border-app-border bg-white px-3 py-2 font-mono text-xs uppercase tracking-wider hover:bg-app-bg"
             >
               Annulla
             </button>
@@ -91,7 +91,7 @@ export default function Profilo() {
         ) : (
           <button
             onClick={() => setConferma(true)}
-            className="mt-3 rounded-md border border-red-300 bg-white px-3 py-2 text-sm text-red-700 hover:bg-red-100"
+            className="mt-3 rounded-lg border border-red-300 bg-white px-3 py-2 font-mono text-xs uppercase tracking-wider text-red-700 hover:bg-red-100"
           >
             Elimina il mio account
           </button>

@@ -29,9 +29,9 @@ export default function Login() {
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="text-2xl font-semibold tracking-tight">Accedi</h1>
+      <h1 className="font-display text-2xl font-black uppercase tracking-tight">Accedi</h1>
 
-      <form onSubmit={invia} className="mt-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={invia} className="mt-6 space-y-3 rounded-lg border border-app-border bg-white p-4">
         <div>
           <label className="block text-sm font-medium">Email</label>
           <input
@@ -39,7 +39,7 @@ export default function Login() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm"
           />
         </div>
         <div>
@@ -49,7 +49,7 @@ export default function Login() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm"
           />
         </div>
 
@@ -57,15 +57,15 @@ export default function Login() {
 
         <button
           disabled={inCorso}
-          className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-app-fg px-3 py-2 font-mono text-xs uppercase tracking-wider text-white hover:bg-app-fg-hover disabled:opacity-50"
         >
           {inCorso ? 'Accesso...' : 'Accedi'}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-slate-600">
+      <p className="mt-4 text-center text-sm text-app-muted">
         Non hai un account?{' '}
-        <Link to="/registrati" className="font-medium underline">
+        <Link to="/registrati" className="font-medium text-app-fg underline">
           Registrati
         </Link>
       </p>

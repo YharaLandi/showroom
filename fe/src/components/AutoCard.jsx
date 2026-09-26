@@ -17,11 +17,11 @@ export default function AutoCard({ auto, preferito, onToggleFavorite }) {
   return (
     <Link
       to={`/auto/${auto.id}`}
-      className="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white transition hover:border-slate-400 hover:shadow-sm"
+      className="group flex flex-col overflow-hidden rounded-lg border border-app-border bg-white transition hover:border-app-fg hover:shadow-sm"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+      <div className="relative aspect-[4/3] overflow-hidden bg-app-border/40">
         {caricamento ? (
-          <div className="h-full w-full animate-pulse bg-slate-200" />
+          <div className="h-full w-full animate-pulse bg-app-border/60" />
         ) : src && !immagineFallita ? (
           <img
             src={src}
@@ -31,14 +31,14 @@ export default function AutoCard({ auto, preferito, onToggleFavorite }) {
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950 px-4 text-center">
-            <span className="text-sm font-medium uppercase tracking-wide text-slate-300">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-app-fg to-app-draft px-4 text-center">
+            <span className="font-mono text-sm font-medium uppercase tracking-wider text-white/70">
               {auto.marca} {auto.modello}
             </span>
           </div>
         )}
 
-        <span className="absolute left-3 top-3 rounded-sm bg-white/90 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-slate-900">
+        <span className="absolute left-3 top-3 rounded-sm bg-app-bg/90 px-2 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-app-fg">
           {ETICHETTE[auto.stato] ?? auto.stato}
         </span>
 
@@ -51,11 +51,11 @@ export default function AutoCard({ auto, preferito, onToggleFavorite }) {
             onToggleFavorite(auto)
           }}
           aria-label={preferito ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}
-          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 transition hover:bg-white"
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-app-bg/90 text-app-muted transition hover:bg-app-bg"
         >
           <svg
             viewBox="0 0 24 24"
-            className={`h-4 w-4 ${preferito ? 'fill-red-600 stroke-red-600' : 'fill-none stroke-current'}`}
+            className={`h-4 w-4 ${preferito ? 'fill-app-accent stroke-app-accent' : 'fill-none stroke-current'}`}
             strokeWidth="2"
           >
             <path
@@ -68,13 +68,13 @@ export default function AutoCard({ auto, preferito, onToggleFavorite }) {
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <div className="text-xs uppercase tracking-wide text-slate-500">{auto.marca}</div>
+        <div className="font-mono text-xs uppercase tracking-wider text-app-muted">{auto.marca}</div>
         <div className="mt-0.5 flex items-baseline justify-between gap-2">
-          <span className="font-medium">{auto.modello}</span>
-          <span className="whitespace-nowrap text-lg font-semibold">{euro(auto.prezzo)}</span>
+          <span className="font-display font-bold">{auto.modello}</span>
+          <span className="whitespace-nowrap font-display text-lg font-bold">{euro(auto.prezzo)}</span>
         </div>
-        <div className="mt-2 text-sm text-slate-500">
-          {auto.annoImmatricolazione} · {km(auto.chilometraggio)} · {alimentazione(auto.alimentazione)}
+        <div className="mt-2 font-mono text-xs uppercase tracking-wider text-app-muted">
+          {auto.annoImmatricolazione} / {alimentazione(auto.alimentazione)} · {km(auto.chilometraggio)}
         </div>
       </div>
     </Link>

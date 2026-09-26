@@ -1,4 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
+
+/*
+ * Palette e font dal riferimento di design (handoff, sezione 9).
+ * Archivo per titoli e testo prodotto; IBM Plex Mono per etichette, badge,
+ * filtri e metadati, sempre maiuscolo con letter-spacing (vedi utility
+ * "uppercase tracking-wide" gia' usate insieme a font-mono nei componenti).
+ */
+@theme {
+  --font-display: "Archivo", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-app-bg: oklch(98.5% 0.002 90);
+  --color-app-fg: oklch(15% 0.005 90);
+  --color-app-fg-hover: oklch(30% 0.005 90);
+  --color-app-muted: oklch(45% 0.005 90);
+  --color-app-border: oklch(90% 0.003 90);
+  --color-app-accent: oklch(55% 0.22 25);
+  /* Badge "bozza" (solo vista admin): testo bianco su questo sfondo quasi nero */
+  --color-app-draft: oklch(20% 0.005 90);
+}
 
 :root {
   color-scheme: light dark;
@@ -7,4 +28,6 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background-color: var(--color-app-bg);
+  color: var(--color-app-fg);
 }

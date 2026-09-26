@@ -17,11 +17,13 @@ const ALIMENTAZIONI = ['BENZINA', 'DIESEL', 'GPL', 'METANO', 'IBRIDA', 'ELETTRIC
 // tra loro: e' l'amministratore a scegliere quando un'auto non e' piu' "nuovo".
 const STATI = ['BOZZA', 'NUOVO', 'DISPONIBILE', 'VENDUTA']
 const ETICHETTE_STATO = { BOZZA: 'Bozza', NUOVO: 'Nuovo', DISPONIBILE: 'Disponibile', VENDUTA: 'Venduta' }
+// Il badge "bozza" e' quello definito dal design system (sezione 9): quasi
+// nero su testo bianco, per marcare a colpo d'occhio cosa non e' ancora pubblico.
 const BADGE_STATO = {
-  BOZZA: 'bg-amber-100 text-amber-800',
-  NUOVO: 'bg-red-100 text-red-800',
+  BOZZA: 'bg-app-draft text-white',
+  NUOVO: 'bg-app-accent text-white',
   DISPONIBILE: 'bg-emerald-100 text-emerald-800',
-  VENDUTA: 'bg-slate-200 text-slate-600',
+  VENDUTA: 'bg-app-border text-app-muted',
 }
 
 export default function AdminAuto() {
@@ -121,20 +123,20 @@ export default function AdminAuto() {
     const valore = e.target.value
     setNuova((n) => ({ ...n, alimentazione: valore, cilindrata: valore === 'ELETTRICA' ? '' : n.cilindrata }))
   }
-  const input = 'rounded-md border border-slate-300 px-3 py-2 text-sm'
+  const input = 'rounded-lg border border-app-border px-3 py-2 font-mono text-sm'
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Gestione catalogo</h1>
+        <h1 className="font-display text-2xl font-black uppercase tracking-tight">Gestione catalogo</h1>
         <button
           onClick={() => setMostraForm((v) => !v)}
-          className="ml-auto rounded-md bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-700"
+          className="ml-auto rounded-lg bg-app-fg px-3 py-2 font-mono text-xs uppercase tracking-wider text-white hover:bg-app-fg-hover"
         >
           {mostraForm ? 'Chiudi' : 'Nuova auto'}
         </button>
       </div>
-      <p className="mt-1 text-sm text-slate-600">
+      <p className="mt-1 text-sm text-app-muted">
         Qui vedi ogni stato (bozza, nuovo, disponibile, venduta) e il prezzo di acquisto: nel
         catalogo pubblico restano solo le auto nuove o disponibili, senza il prezzo di acquisto.
       </p>
@@ -146,7 +148,7 @@ export default function AdminAuto() {
 
       <form
         onSubmit={creaMarca}
-        className="mt-4 flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-white p-4"
+        className="mt-4 flex flex-wrap gap-2 rounded-lg border border-app-border bg-white p-4"
       >
         <input
           className={`${input} min-w-48 flex-1`}
@@ -155,7 +157,7 @@ export default function AdminAuto() {
           onChange={(e) => setNuovaMarca(e.target.value)}
           required
         />
-        <button className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">
+        <button className="rounded-lg border border-app-border px-3 py-2 font-mono text-xs uppercase tracking-wider hover:border-app-fg">
           Aggiungi marca
         </button>
       </form>
@@ -163,7 +165,7 @@ export default function AdminAuto() {
       {mostraForm && (
         <form
           onSubmit={creaAuto}
-          className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2"
+          className="mt-4 grid gap-3 rounded-lg border border-app-border bg-white p-4 sm:grid-cols-2"
         >
           <input
             className={input}
@@ -257,7 +259,7 @@ export default function AdminAuto() {
             onChange={campo('descrizione')}
             required
           />
-          <button className="rounded-md bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-700 sm:col-span-2">
+          <button className="rounded-lg bg-app-fg px-3 py-2 font-mono text-xs uppercase tracking-wider text-white hover:bg-app-fg-hover sm:col-span-2">
             Crea come bozza
           </button>
         </form>
@@ -265,34 +267,36 @@ export default function AdminAuto() {
 
       <div className="mt-6 space-y-3">
         {risultato?.content.map((auto) => (
-          <div key={auto.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          <div key={auto.id} className="rounded-lg border border-app-border bg-white p-4">
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_STATO[auto.stato]}`}>
+                  <span
+                    className={`rounded-sm px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wider ${BADGE_STATO[auto.stato]}`}
+                  >
                     {ETICHETTE_STATO[auto.stato]}
                   </span>
-                  <Link to={`/auto/${auto.id}`} className="font-medium hover:underline">
+                  <Link to={`/auto/${auto.id}`} className="font-display font-bold hover:underline">
                     {auto.marca} {auto.modello}
                   </Link>
                 </div>
-                <div className="mt-1 text-sm text-slate-600">
+                <div className="mt-1 font-mono text-xs uppercase tracking-wider text-app-muted">
                   {auto.annoImmatricolazione} · {km(auto.chilometraggio)}
                   {auto.potenza != null && ` · ${potenza(auto.potenza)}`}
                   {auto.cilindrata != null && ` (${cilindrata(auto.cilindrata)})`}
                   {' · telaio '}{auto.telaio}
                 </div>
                 <div className="mt-1 text-sm">
-                  Vendita <strong>{euro(auto.prezzo)}</strong>
+                  Vendita <strong className="font-display">{euro(auto.prezzo)}</strong>
                   {auto.prezzoAcquisto != null && (
-                    <span className="text-slate-500"> · acquisto {euro(auto.prezzoAcquisto)}</span>
+                    <span className="text-app-muted"> · acquisto {euro(auto.prezzoAcquisto)}</span>
                   )}
                 </div>
               </div>
               <select
                 value={auto.stato}
                 onChange={(e) => cambiaStato(auto, e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
+                className="rounded-lg border border-app-border px-3 py-1.5 font-mono text-xs uppercase tracking-wide hover:border-app-fg"
               >
                 {STATI.map((s) => (
                   <option key={s} value={s}>
@@ -302,18 +306,18 @@ export default function AdminAuto() {
               </select>
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3">
+            <div className="mt-3 flex flex-wrap gap-2 border-t border-app-border pt-3">
               <input
                 type="number"
                 min="1"
                 placeholder="Nuovo prezzo"
                 value={prezzi[auto.id] ?? ''}
                 onChange={(e) => setPrezzi((p) => ({ ...p, [auto.id]: e.target.value }))}
-                className="w-40 rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+                className="w-40 rounded-lg border border-app-border px-3 py-1.5 font-mono text-sm"
               />
               <button
                 onClick={() => salvaPrezzo(auto)}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
+                className="rounded-lg border border-app-border px-3 py-1.5 font-mono text-xs uppercase tracking-wider hover:border-app-fg"
               >
                 Cambia prezzo
               </button>

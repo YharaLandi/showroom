@@ -48,11 +48,11 @@ export default function DisattivaAvviso() {
 
   return (
     <div className="mx-auto max-w-md text-center">
-      <h1 className="text-2xl font-semibold tracking-tight">{m.titolo}</h1>
-      <p className="mt-2 text-sm text-slate-600">{m.testo}</p>
+      <h1 className="font-display text-2xl font-black uppercase tracking-tight">{m.titolo}</h1>
+      <p className="mt-2 text-sm text-app-muted">{m.testo}</p>
       <Link
         to="/"
-        className="mt-6 inline-block rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700"
+        className="mt-6 inline-block rounded-lg bg-app-fg px-4 py-2 font-mono text-xs uppercase tracking-wider text-white hover:bg-app-fg-hover"
       >
         Vai al catalogo
       </Link>

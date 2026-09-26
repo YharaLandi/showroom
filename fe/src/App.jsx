@@ -23,7 +23,7 @@ import Registrazione from '@/pages/Registrazione'
 function Protetta({ children, soloAdmin = false }) {
   const { collegato, amministratore, caricamento } = useAuth()
 
-  if (caricamento) return <p className="text-sm text-slate-500">Caricamento...</p>
+  if (caricamento) return <p className="text-sm text-app-muted">Caricamento...</p>
   if (!collegato) return <Navigate to="/accedi" replace />
   if (soloAdmin && !amministratore) return <Navigate to="/" replace />
   return children
@@ -33,10 +33,10 @@ function NonTrovata() {
   return (
     <div className="mx-auto max-w-md text-center">
       <h1 className="text-2xl font-semibold tracking-tight">Pagina non trovata</h1>
-      <p className="mt-2 text-sm text-slate-600">L&rsquo;indirizzo che hai aperto non esiste.</p>
+      <p className="mt-2 text-sm text-app-muted">L&rsquo;indirizzo che hai aperto non esiste.</p>
       <Link
         to="/"
-        className="mt-6 inline-block rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700"
+        className="mt-6 inline-block rounded-lg bg-app-fg px-4 py-2 font-mono text-sm uppercase tracking-wider text-white hover:bg-app-fg-hover"
       >
         Vai al catalogo
       </Link>
@@ -46,7 +46,7 @@ function NonTrovata() {
 
 export default function App() {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen flex-col bg-app-bg text-app-fg">
       <Header />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
@@ -99,9 +99,9 @@ export default function App() {
       </main>
 
       {/* Privacy e Cookie raggiungibili da ogni pagina */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-sm text-slate-600">
-          <span>ShowRoom</span>
+      <footer className="border-t border-app-border bg-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 font-mono text-xs uppercase tracking-wider text-app-muted">
+          <span className="font-display font-bold normal-case tracking-tight text-app-fg">SHOWROOM.</span>
           <Link to="/privacy" className="hover:underline">
             Privacy Policy
           </Link>
