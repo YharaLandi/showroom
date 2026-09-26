@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -48,10 +49,21 @@ public class MailService {
             // abbia accesso al progetto.
             log.info("Avviso {}: mail inviata", n.avvisoId());
         } catch (Exception e) {
-            // Anche il messaggio d'errore puo' contenere l'indirizzo: si logga il tipo
-            log.warn("Avviso {}: invio fallito ({})", n.avvisoId(), e.getClass().getSimpleName());
+            // La causa vera (es. Gmail che rifiuta il mittente, o l'autenticazione)
+            // serve per capire cosa aggiustare. Un indirizzo email che ci finisse
+            // dentro viene comunque oscurato: i log di Render li legge chiunque
+            // abbia accesso al progetto.
+            Throwable causa = e.getCause() != null ? e.getCause() : e;
+            log.warn("Avviso {}: invio fallito - {}: {}", n.avvisoId(), causa.getClass().getSimpleName(),
+                    oscuraEmail(causa.getMessage()));
             throw new IllegalStateException("Invio non riuscito", e);
         }
+    }
+
+    private static final Pattern EMAIL = Pattern.compile("[\\w.+-]+@[\\w-]+\\.[\\w.-]+");
+
+    private static String oscuraEmail(String messaggio) {
+        return messaggio == null ? "(nessun dettaglio)" : EMAIL.matcher(messaggio).replaceAll("[email]");
     }
 
     // Ogni valore passa da Html.escape: nome e modello sono testo scritto da qualcuno
