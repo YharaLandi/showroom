@@ -88,6 +88,23 @@ Nel corpo HTML della mail ogni valore passa da `Html.escape`: nome dell'utente e
 modello dell'auto sono testo scritto da qualcuno. L'oggetto no, perche' non e'
 HTML e scaparlo mostrerebbe `&lt;` al destinatario.
 
+### Limite noto: SMTP sul piano gratuito di Render
+
+In locale l'invio funziona ed e' stato verificato con una mail vera ricevuta
+davvero. Sul piano gratuito di Render, lo stesso codice fallisce sempre con
+`MailConnectException: Couldn't connect to host, port: smtp.gmail.com, 587`:
+il traffico SMTP in uscita (porte 25/587/465) e' bloccato a livello di rete
+dall'hosting gratuito, una misura comune contro lo spam sui piani free di
+diverse piattaforme cloud. Non e' un problema di credenziali ne' di codice:
+la connessione fallisce prima ancora che parta un tentativo di autenticazione,
+e lo stesso identico codice funziona senza modifiche appena c'e' una rete che
+non blocca quelle porte (in locale, o su un piano Render a pagamento).
+
+Il meccanismo di sicurezza descritto sopra (`rimettiInAttesa`) e' proprio
+quello che tiene l'avviso "in attesa" invece di perderlo quando questo accade:
+appena l'invio torna possibile, il primo ribasso di prezzo successivo lo
+consegna.
+
 ## Avvio in locale
 
 1. PostgreSQL sulla 5432 e database creato:
