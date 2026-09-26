@@ -2,6 +2,7 @@ package org.example.showroom.dto;
 
 import jakarta.validation.constraints.*;
 import org.example.showroom.entities.Alimentazione;
+import org.example.showroom.entities.StatoAuto;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -17,9 +18,11 @@ public record ModificaAutoRequest(
         @Min(1900) Integer annoImmatricolazione,
         @PositiveOrZero Integer chilometraggio,
         Alimentazione alimentazione,
+        @Positive Integer cilindrata,
+        @Positive Integer potenza,
         @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal prezzoAcquisto,
         String descrizione,
-        Boolean bozza,
+        StatoAuto stato,
         String path
 ) {
 }

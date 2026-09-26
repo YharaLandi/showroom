@@ -1,19 +1,18 @@
 import { Link } from 'react-router-dom'
 import { alimentazione, euro, km } from '@/lib/formato'
-import { immagineAuto } from '@/lib/immagini'
+import { useImmagineAuto } from '@/lib/immagini'
 import { useState } from 'react'
 
-const QUATTORDICI_GIORNI_MS = 14 * 24 * 60 * 60 * 1000
+// Il catalogo pubblico restituisce solo NUOVO o DISPONIBILE (il backend filtra
+// prima), quindi qui basta distinguere questi due: "nuovo" e' una scelta
+// dell'amministratore, non piu' un calcolo sulla data di creazione.
+const ETICHETTE = { NUOVO: 'Nuovo', DISPONIBILE: 'Disponibile' }
 
-/**
- * L'immagine arriva da imagin.studio: foto vera se conosce marca e modello,
- * la sua sagoma generica altrimenti. Il servizio risponde sempre 200 anche
- * quando non ha un'auto del genere, quindi onError qui copre solo i guasti di
- * rete veri, non l'assenza del modello.
- */
+// La foto arriva da Wikipedia (vedi lib/immagini.js): reale e senza filigrana
+// quando la trova, un segnaposto elegante altrimenti. Mai un'immagine rotta.
 export default function AutoCard({ auto, preferito, onToggleFavorite }) {
+  const { src, caricamento } = useImmagineAuto(auto.marca, auto.modello)
   const [immagineFallita, setImmagineFallita] = useState(false)
-  const nuova = auto.createdAt && Date.now() - new Date(auto.createdAt).getTime() < QUATTORDICI_GIORNI_MS
 
   return (
     <Link
@@ -21,24 +20,26 @@ export default function AutoCard({ auto, preferito, onToggleFavorite }) {
       className="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white transition hover:border-slate-400 hover:shadow-sm"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-        {immagineFallita ? (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950 px-4 text-center">
-            <span className="text-sm font-medium uppercase tracking-wide text-slate-300">
-              {auto.marca} {auto.modello}
-            </span>
-          </div>
-        ) : (
+        {caricamento ? (
+          <div className="h-full w-full animate-pulse bg-slate-200" />
+        ) : src && !immagineFallita ? (
           <img
-            src={immagineAuto(auto.marca, auto.modello)}
+            src={src}
             alt={`${auto.marca} ${auto.modello}`}
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             onError={() => setImmagineFallita(true)}
             loading="lazy"
           />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950 px-4 text-center">
+            <span className="text-sm font-medium uppercase tracking-wide text-slate-300">
+              {auto.marca} {auto.modello}
+            </span>
+          </div>
         )}
 
         <span className="absolute left-3 top-3 rounded-sm bg-white/90 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-slate-900">
-          {nuova ? 'Nuovo' : 'Disponibile'}
+          {ETICHETTE[auto.stato] ?? auto.stato}
         </span>
 
         {/* preventDefault + stopPropagation: la card intera e' un Link, il cuore non deve aprirlo */}

@@ -46,7 +46,8 @@ public class AvvisoService {
     public AvvisoResponse crea(UUID userId, NuovoAvvisoRequest r) {
         User user = utente(userId);
         Auto auto = autoService.trova(r.autoId());
-        if (auto.isBozza()) {
+        // Bozza o venduta: non e' in catalogo, non la si puo' seguire con un avviso
+        if (!autoService.pubblica(auto)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Auto non trovata");
         }
         if (avvisoRepository.existsByUserAndAutoId(user, auto.getId())) {

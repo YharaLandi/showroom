@@ -24,7 +24,7 @@ export class ErroreApi extends Error {
   }
 }
 
-async function chiama(percorso, opzioni = {}) {
+async function chiama(percorso, opzioni = {}, giaRiprovato = false) {
   const token = leggiToken()
   const risposta = await fetch(`${BASE}${percorso}`, {
     ...opzioni,
@@ -34,6 +34,16 @@ async function chiama(percorso, opzioni = {}) {
       ...opzioni.headers,
     },
   })
+
+  // Un token scaduto o revocato non deve bloccare la sfoglia anonima: lo
+  // buttiamo e riproviamo una volta sola senza, cosi' /api/auto (pubblico)
+  // torna a rispondere anche a chi ha una sessione morta in localStorage.
+  // Se la richiesta era verso un endpoint che l'accesso lo richiede davvero,
+  // il secondo tentativo fallisce comunque e l'errore prosegue normale.
+  if (risposta.status === 401 && token && !giaRiprovato) {
+    dimenticaToken()
+    return chiama(percorso, opzioni, true)
+  }
 
   if (!risposta.ok) {
     let messaggio = `${risposta.status} ${risposta.statusText}`
@@ -53,7 +63,12 @@ async function chiama(percorso, opzioni = {}) {
     throw new ErroreApi(risposta.status, messaggio, campi)
   }
 
-  return risposta.status === 204 ? undefined : risposta.json()
+  // Non ci si affida allo status per sapere se c'e' un corpo: 200 e 201 di
+  // questa API a volte non ne hanno (register, logout, crea ruolo...), non
+  // solo 204. .json() su un corpo vuoto lancia "Unexpected end of JSON input"
+  // anche quando la richiesta e' andata a buon fine.
+  const testo = await risposta.text()
+  return testo ? JSON.parse(testo) : undefined
 }
 
 const corpo = (dati) => ({ body: JSON.stringify(dati) })

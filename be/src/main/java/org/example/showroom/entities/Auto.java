@@ -14,7 +14,9 @@ import java.util.UUID;
 @Table(name = "auto", check = {
         @CheckConstraint(name = "auto_prezzo_check", constraint = "prezzo > 0"),
         @CheckConstraint(name = "auto_prezzo_acquisto_check", constraint = "prezzo_acquisto IS NULL OR prezzo_acquisto >= 0"),
-        @CheckConstraint(name = "auto_chilometraggio_check", constraint = "chilometraggio >= 0")
+        @CheckConstraint(name = "auto_chilometraggio_check", constraint = "chilometraggio >= 0"),
+        @CheckConstraint(name = "auto_cilindrata_check", constraint = "cilindrata IS NULL OR cilindrata > 0"),
+        @CheckConstraint(name = "auto_potenza_check", constraint = "potenza IS NULL OR potenza > 0")
 })
 @Getter
 @Setter
@@ -48,6 +50,13 @@ public class Auto {
     @Column(nullable = false, length = 20)
     private Alimentazione alimentazione;
 
+    // Nullo per le elettriche: non hanno cilindri. Sulle altre e' facoltativo
+    // solo per le auto create prima che il campo esistesse.
+    private Integer cilindrata;
+
+    // A differenza della cilindrata si applica a ogni alimentazione, elettriche comprese
+    private Integer potenza;
+
     // Prezzo di vendita, l'unico che vede il pubblico
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal prezzo;
@@ -60,9 +69,10 @@ public class Auto {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String descrizione;
 
-    // true = bozza, fuori dal catalogo pubblico e visibile ai soli amministratori
-    @Column(nullable = false)
-    private boolean bozza = true;
+    // Nasce sempre BOZZA. BOZZA e VENDUTA restano fuori dal catalogo pubblico.
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private StatoAuto stato = StatoAuto.BOZZA;
 
     // Percorso della foto (NULL se non caricata)
     private String path;

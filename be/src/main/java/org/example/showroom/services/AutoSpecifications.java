@@ -5,6 +5,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.example.showroom.dto.AutoSearchParams;
 import org.example.showroom.entities.Auto;
 import org.example.showroom.entities.Marca;
+import org.example.showroom.entities.StatoAuto;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Year;
@@ -20,8 +21,10 @@ final class AutoSpecifications {
     }
 
     /**
-     * @param soloPubblicate true per il catalogo pubblico: le bozze restano fuori.
-     *                       Lo decide il service in base all'endpoint, non il client.
+     * @param soloPubblicate true per il catalogo pubblico: bozze e venduti restano
+     *                       fuori (la prima non e' pronta, il secondo non e' piu'
+     *                       acquistabile). Lo decide il service in base all'endpoint,
+     *                       non il client.
      */
     static Specification<Auto> da(AutoSearchParams p, boolean soloPubblicate) {
         return (root, query, cb) -> {
@@ -29,7 +32,7 @@ final class AutoSpecifications {
             List<Predicate> filtri = new ArrayList<>();
 
             if (soloPubblicate) {
-                filtri.add(cb.isFalse(root.get("bozza")));
+                filtri.add(root.get("stato").in(List.of(StatoAuto.NUOVO, StatoAuto.DISPONIBILE)));
             }
             if (presente(p.q())) {
                 filtri.add(cb.or(

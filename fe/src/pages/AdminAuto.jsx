@@ -3,14 +3,26 @@ import { Link } from 'react-router-dom'
 import Messaggio from '@/components/Messaggio'
 import Paginazione from '@/components/Paginazione'
 import { api } from '@/lib/api'
-import { euro, km } from '@/lib/formato'
+import { cilindrata, euro, km, potenza } from '@/lib/formato'
 
 const AUTO_VUOTA = {
   telaio: '', marcaId: '', modello: '', annoImmatricolazione: '', chilometraggio: '',
-  alimentazione: 'BENZINA', prezzo: '', prezzoAcquisto: '', descrizione: '',
+  alimentazione: 'BENZINA', cilindrata: '', potenza: '', prezzo: '', prezzoAcquisto: '', descrizione: '',
 }
 
 const ALIMENTAZIONI = ['BENZINA', 'DIESEL', 'GPL', 'METANO', 'IBRIDA', 'ELETTRICA']
+
+// L'ordine e' quello del ciclo di vita naturale di un'auto: bozza -> pubblicata
+// (nuovo o disponibile) -> venduta. Nuovo e disponibile non sono in sequenza
+// tra loro: e' l'amministratore a scegliere quando un'auto non e' piu' "nuovo".
+const STATI = ['BOZZA', 'NUOVO', 'DISPONIBILE', 'VENDUTA']
+const ETICHETTE_STATO = { BOZZA: 'Bozza', NUOVO: 'Nuovo', DISPONIBILE: 'Disponibile', VENDUTA: 'Venduta' }
+const BADGE_STATO = {
+  BOZZA: 'bg-amber-100 text-amber-800',
+  NUOVO: 'bg-red-100 text-red-800',
+  DISPONIBILE: 'bg-emerald-100 text-emerald-800',
+  VENDUTA: 'bg-slate-200 text-slate-600',
+}
 
 export default function AdminAuto() {
   const [pagina, setPagina] = useState(0)
@@ -58,21 +70,24 @@ export default function AdminAuto() {
         ...nuova,
         annoImmatricolazione: Number(nuova.annoImmatricolazione),
         chilometraggio: Number(nuova.chilometraggio),
+        // Cilindrata facoltativa: le elettriche restano senza
+        cilindrata: nuova.cilindrata === '' ? null : Number(nuova.cilindrata),
+        potenza: Number(nuova.potenza),
         prezzo: Number(nuova.prezzo),
         prezzoAcquisto: nuova.prezzoAcquisto === '' ? null : Number(nuova.prezzoAcquisto),
       })
       setNuova(AUTO_VUOTA)
       setMostraForm(false)
-      setEsito({ tipo: 'ok', testo: 'Auto creata come bozza. Pubblicala quando è pronta.' })
+      setEsito({ tipo: 'ok', testo: 'Auto creata come bozza. Cambia lo stato quando è pronta.' })
       carica()
     } catch (err) {
       setEsito({ tipo: 'errore', testo: err.stato === 409 ? 'Telaio già presente.' : err.message })
     }
   }
 
-  async function cambiaPubblicazione(auto) {
+  async function cambiaStato(auto, stato) {
     try {
-      await api.modificaAuto(auto.id, { bozza: !auto.bozza })
+      await api.modificaAuto(auto.id, { stato })
       carica()
     } catch (err) {
       setEsito({ tipo: 'errore', testo: err.message })
@@ -99,6 +114,13 @@ export default function AdminAuto() {
   }
 
   const campo = (nome) => (e) => setNuova((n) => ({ ...n, [nome]: e.target.value }))
+  // Passando a elettrica si svuota anche la cilindrata: il campo si disabilita
+  // nel form, ma senza questo il valore scritto prima resterebbe in memoria e
+  // finirebbe comunque inviato.
+  const cambiaAlimentazione = (e) => {
+    const valore = e.target.value
+    setNuova((n) => ({ ...n, alimentazione: valore, cilindrata: valore === 'ELETTRICA' ? '' : n.cilindrata }))
+  }
   const input = 'rounded-md border border-slate-300 px-3 py-2 text-sm'
 
   return (
@@ -113,7 +135,8 @@ export default function AdminAuto() {
         </button>
       </div>
       <p className="mt-1 text-sm text-slate-600">
-        Qui vedi anche le bozze e il prezzo di acquisto, che nel catalogo pubblico non compaiono.
+        Qui vedi ogni stato (bozza, nuovo, disponibile, venduta) e il prezzo di acquisto: nel
+        catalogo pubblico restano solo le auto nuove o disponibili, senza il prezzo di acquisto.
       </p>
 
       <div className="mt-4">{esito && <Messaggio tipo={esito.tipo}>{esito.testo}</Messaggio>}</div>
@@ -184,13 +207,31 @@ export default function AdminAuto() {
             onChange={campo('chilometraggio')}
             required
           />
-          <select className={input} value={nuova.alimentazione} onChange={campo('alimentazione')}>
+          <select className={input} value={nuova.alimentazione} onChange={cambiaAlimentazione}>
             {ALIMENTAZIONI.map((a) => (
               <option key={a} value={a}>
                 {a.charAt(0) + a.slice(1).toLowerCase()}
               </option>
             ))}
           </select>
+          <input
+            className={input}
+            type="number"
+            placeholder={nuova.alimentazione === 'ELETTRICA' ? 'Cilindrata (non applicabile)' : 'Cilindrata (cc)'}
+            min="1"
+            value={nuova.cilindrata}
+            onChange={campo('cilindrata')}
+            disabled={nuova.alimentazione === 'ELETTRICA'}
+          />
+          <input
+            className={input}
+            type="number"
+            placeholder="Potenza (CV)"
+            min="1"
+            value={nuova.potenza}
+            onChange={campo('potenza')}
+            required
+          />
           <input
             className={input}
             type="number"
@@ -228,21 +269,18 @@ export default function AdminAuto() {
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  {auto.bozza ? (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                      Bozza
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-                      In catalogo
-                    </span>
-                  )}
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_STATO[auto.stato]}`}>
+                    {ETICHETTE_STATO[auto.stato]}
+                  </span>
                   <Link to={`/auto/${auto.id}`} className="font-medium hover:underline">
                     {auto.marca} {auto.modello}
                   </Link>
                 </div>
                 <div className="mt-1 text-sm text-slate-600">
-                  {auto.annoImmatricolazione} · {km(auto.chilometraggio)} · telaio {auto.telaio}
+                  {auto.annoImmatricolazione} · {km(auto.chilometraggio)}
+                  {auto.potenza != null && ` · ${potenza(auto.potenza)}`}
+                  {auto.cilindrata != null && ` (${cilindrata(auto.cilindrata)})`}
+                  {' · telaio '}{auto.telaio}
                 </div>
                 <div className="mt-1 text-sm">
                   Vendita <strong>{euro(auto.prezzo)}</strong>
@@ -251,12 +289,17 @@ export default function AdminAuto() {
                   )}
                 </div>
               </div>
-              <button
-                onClick={() => cambiaPubblicazione(auto)}
+              <select
+                value={auto.stato}
+                onChange={(e) => cambiaStato(auto, e.target.value)}
                 className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
               >
-                {auto.bozza ? 'Pubblica' : 'Riporta in bozza'}
-              </button>
+                {STATI.map((s) => (
+                  <option key={s} value={s}>
+                    {ETICHETTE_STATO[s]}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3">

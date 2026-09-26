@@ -39,8 +39,8 @@ public class PreferitoService {
     public PreferitoResponse aggiungi(UUID userId, NuovoPreferitoRequest r) {
         User user = utente(userId);
         Auto auto = autoService.trova(r.autoId());
-        // Una bozza non e' in catalogo: non la si puo' mettere tra i preferiti
-        if (auto.isBozza()) {
+        // Bozza o venduta: non e' in catalogo, non la si puo' mettere tra i preferiti
+        if (!autoService.pubblica(auto)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Auto non trovata");
         }
         if (preferitoRepository.existsByUserAndAutoId(user, auto.getId())) {

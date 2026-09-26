@@ -3,8 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import Messaggio from '@/components/Messaggio'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { alimentazione, euro, km } from '@/lib/formato'
-import { immagineAuto } from '@/lib/immagini'
+import { alimentazione, cilindrata, euro, km, potenza } from '@/lib/formato'
+import { useImmagineAuto } from '@/lib/immagini'
 
 export default function DettaglioAuto() {
   const { id } = useParams()
@@ -13,6 +13,11 @@ export default function DettaglioAuto() {
   const [errore, setErrore] = useState(null)
   const [esito, setEsito] = useState(null)
   const [soglia, setSoglia] = useState('')
+
+  // Prima dei return anticipati qui sotto: gli hook non possono essere
+  // condizionali. Con auto ancora null la guardia dentro cercaImmagineAuto
+  // evita la chiamata di rete finche' non arriva davvero.
+  const immagine = useImmagineAuto(auto?.marca, auto?.modello)
 
   useEffect(() => {
     api
@@ -63,11 +68,21 @@ export default function DettaglioAuto() {
       </Link>
 
       <div className="mt-3 aspect-[16/9] overflow-hidden rounded-lg bg-slate-100">
-        <img
-          src={immagineAuto(auto.marca, auto.modello, { larghezza: 1200 })}
-          alt={`${auto.marca} ${auto.modello}`}
-          className="h-full w-full object-cover"
-        />
+        {immagine.caricamento ? (
+          <div className="h-full w-full animate-pulse bg-slate-200" />
+        ) : immagine.src ? (
+          <img
+            src={immagine.src}
+            alt={`${auto.marca} ${auto.modello}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
+            <span className="text-sm font-medium uppercase tracking-wide text-slate-300">
+              {auto.marca} {auto.modello}
+            </span>
+          </div>
+        )}
       </div>
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">
@@ -75,7 +90,7 @@ export default function DettaglioAuto() {
       </h1>
       <p className="mt-1 text-3xl font-semibold">{euro(auto.prezzo)}</p>
 
-      <dl className="mt-6 grid grid-cols-2 gap-4 rounded-lg border border-slate-200 bg-white p-4 text-sm sm:grid-cols-4">
+      <dl className="mt-6 grid grid-cols-2 gap-4 rounded-lg border border-slate-200 bg-white p-4 text-sm sm:grid-cols-3">
         <div>
           <dt className="text-slate-500">Anno</dt>
           <dd className="mt-0.5 font-medium">{auto.annoImmatricolazione}</dd>
@@ -87,6 +102,17 @@ export default function DettaglioAuto() {
         <div>
           <dt className="text-slate-500">Alimentazione</dt>
           <dd className="mt-0.5 font-medium">{alimentazione(auto.alimentazione)}</dd>
+        </div>
+        {/* Assente per le elettriche: niente riquadro vuoto al posto della cilindrata */}
+        {cilindrata(auto.cilindrata) && (
+          <div>
+            <dt className="text-slate-500">Cilindrata</dt>
+            <dd className="mt-0.5 font-medium">{cilindrata(auto.cilindrata)}</dd>
+          </div>
+        )}
+        <div>
+          <dt className="text-slate-500">Potenza</dt>
+          <dd className="mt-0.5 font-medium">{potenza(auto.potenza)}</dd>
         </div>
         <div>
           <dt className="text-slate-500">Telaio</dt>

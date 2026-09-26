@@ -9,3 +9,7 @@ export const alimentazione = (valore) =>
   valore ? valore.charAt(0) + valore.slice(1).toLowerCase() : ''
 
 export const data = (iso) => (iso ? new Date(iso).toLocaleDateString('it-IT') : '')
+
+// null per le elettriche: niente cilindri, non e' un dato mancante per errore
+export const cilindrata = (valore) => (valore ? `${NUMERO.format(valore)} cc` : null)
+export const potenza = (valore) => (valore ? `${NUMERO.format(valore)} CV` : null)

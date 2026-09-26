@@ -14,6 +14,9 @@ public record NuovaAutoRequest(
         @NotNull @Min(1900) Integer annoImmatricolazione,
         @NotNull @PositiveOrZero Integer chilometraggio,
         @NotNull Alimentazione alimentazione,
+        // Facoltativa: le elettriche non hanno cilindrata
+        @Positive Integer cilindrata,
+        @NotNull @Positive Integer potenza,
         @NotNull @DecimalMin(value = "0.00", inclusive = false) @Digits(integer = 8, fraction = 2) BigDecimal prezzo,
         @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal prezzoAcquisto,
         @NotBlank String descrizione,

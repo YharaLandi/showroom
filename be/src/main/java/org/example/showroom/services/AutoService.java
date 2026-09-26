@@ -3,6 +3,7 @@ package org.example.showroom.services;
 import lombok.RequiredArgsConstructor;
 import org.example.showroom.dto.*;
 import org.example.showroom.entities.Auto;
+import org.example.showroom.entities.StatoAuto;
 import org.example.showroom.events.PrezzoRibassatoEvent;
 import org.example.showroom.repositories.AutoRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,6 +33,7 @@ public class AutoService {
             "annoImmatricolazione", "annoImmatricolazione",
             "chilometraggio", "chilometraggio",
             "alimentazione", "alimentazione",
+            "potenza", "potenza",
             "createdAt", "createdAt");
     private static final Sort SORT_PREDEFINITO = Sort.by(Sort.Direction.DESC, "createdAt");
 
@@ -46,12 +48,12 @@ public class AutoService {
         return PageResponse.of(cerca(params, pageable, true).map(AutoResponse::of));
     }
 
-    // Le bozze non sono in catalogo e non hanno nemmeno una pagina di dettaglio:
-    // chi ne indovina l'id riceve 404 come per un'auto che non esiste.
+    // Bozze e venduti non sono in catalogo e non hanno nemmeno una pagina di
+    // dettaglio: chi ne indovina l'id riceve 404 come per un'auto che non esiste.
     @Transactional(readOnly = true)
     public AutoResponse dettaglio(UUID id) {
         Auto auto = trova(id);
-        if (auto.isBozza()) {
+        if (!pubblica(auto)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Auto non trovata");
         }
         return AutoResponse.of(auto);
@@ -86,12 +88,14 @@ public class AutoService {
         auto.setAnnoImmatricolazione(Year.of(r.annoImmatricolazione()));
         auto.setChilometraggio(r.chilometraggio());
         auto.setAlimentazione(r.alimentazione());
+        auto.setCilindrata(r.cilindrata());
+        auto.setPotenza(r.potenza());
         auto.setPrezzo(r.prezzo());
         auto.setPrezzoAcquisto(r.prezzoAcquisto());
         auto.setDescrizione(r.descrizione().trim());
         auto.setPath(r.path());
-        // Nasce come bozza: si pubblica con una modifica esplicita
-        auto.setBozza(true);
+        // Nasce sempre BOZZA: si pubblica con una modifica esplicita dello stato
+        auto.setStato(StatoAuto.BOZZA);
         autoRepository.save(auto);
 
         return AutoAdminResponse.of(auto);
@@ -109,9 +113,11 @@ public class AutoService {
         }
         if (r.chilometraggio() != null) auto.setChilometraggio(r.chilometraggio());
         if (r.alimentazione() != null) auto.setAlimentazione(r.alimentazione());
+        if (r.cilindrata() != null) auto.setCilindrata(r.cilindrata());
+        if (r.potenza() != null) auto.setPotenza(r.potenza());
         if (r.prezzoAcquisto() != null) auto.setPrezzoAcquisto(r.prezzoAcquisto());
         if (r.descrizione() != null) auto.setDescrizione(r.descrizione().trim());
-        if (r.bozza() != null) auto.setBozza(r.bozza());
+        if (r.stato() != null) auto.setStato(r.stato());
         if (r.path() != null) auto.setPath(r.path());
 
         return AutoAdminResponse.of(auto);
@@ -144,6 +150,13 @@ public class AutoService {
     Auto trova(UUID id) {
         return autoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Auto non trovata"));
+    }
+
+    // Usato anche da PreferitoService e AvvisoService: una bozza non e' ancora in
+    // vendita, una venduta non lo e' piu'. Ne' l'una ne' l'altra vanno tra i
+    // preferiti o gli avvisi di prezzo.
+    boolean pubblica(Auto auto) {
+        return auto.getStato() == StatoAuto.NUOVO || auto.getStato() == StatoAuto.DISPONIBILE;
     }
 
     private org.springframework.data.domain.Page<Auto> cerca(AutoSearchParams params, Pageable pageable, boolean soloPubblicate) {

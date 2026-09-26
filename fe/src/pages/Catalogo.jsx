@@ -5,8 +5,8 @@ import Messaggio from '@/components/Messaggio'
 import Paginazione from '@/components/Paginazione'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { alimentazione as etichettaAlimentazione, euro, km } from '@/lib/formato'
-import { immagineAuto } from '@/lib/immagini'
+import { alimentazione as etichettaAlimentazione, euro, km, potenza as formatoPotenza } from '@/lib/formato'
+import { useImmagineAuto } from '@/lib/immagini'
 
 // Gli stessi nomi che il backend accetta in SORT_CONSENTITI: qualunque altro
 // valore riceverebbe 400, quindi qui si scelgono da un elenco chiuso.
@@ -35,6 +35,10 @@ export default function Catalogo() {
 
   const [inEvidenza, setInEvidenza] = useState(null)
   const [preferiti, setPreferiti] = useState({}) // { autoId: preferitoId }
+
+  // Chiamato sempre, anche prima che inEvidenza arrivi: la guardia sta dentro
+  // cercaImmagineAuto, che con marca/modello vuoti torna null senza chiamare la rete.
+  const immagineHero = useImmagineAuto(inEvidenza?.marca, inEvidenza?.modello)
 
   useEffect(() => {
     api.marche().then(setMarche).catch(() => setMarche([]))
@@ -118,24 +122,40 @@ export default function Catalogo() {
           onClick={() => navigate(`/auto/${inEvidenza.id}`)}
           className="relative -mx-4 mb-10 cursor-pointer overflow-hidden sm:-mx-4"
         >
-          <div className="relative aspect-[16/9] w-full sm:aspect-[21/9]">
-            <img
-              src={immagineAuto(inEvidenza.marca, inEvidenza.modello, { larghezza: 1600 })}
-              alt={`${inEvidenza.marca} ${inEvidenza.modello}`}
-              className="h-full w-full object-cover"
-            />
+          <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 sm:aspect-[21/9]">
+            {immagineHero.caricamento ? (
+              <div className="h-full w-full animate-pulse bg-slate-200" />
+            ) : immagineHero.src ? (
+              <img
+                src={immagineHero.src}
+                alt={`${inEvidenza.marca} ${inEvidenza.modello}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
+                <span className="text-lg font-medium uppercase tracking-wide text-slate-300">
+                  {inEvidenza.marca} {inEvidenza.modello}
+                </span>
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent" />
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 px-4 pb-6 sm:px-8 sm:pb-8">
             <div className="text-xs font-medium uppercase tracking-wide text-red-600">
-              Nuovo arrivo · {inEvidenza.annoImmatricolazione}
+              {inEvidenza.stato === 'NUOVO' ? 'Nuovo arrivo' : 'In evidenza'} · {inEvidenza.annoImmatricolazione}
             </div>
             <h1 className="mt-1 text-3xl font-bold uppercase leading-none tracking-tight sm:text-5xl">
               {inEvidenza.marca} {inEvidenza.modello}
             </h1>
 
             <div className="mt-4 flex flex-wrap gap-8 border-t border-slate-300 pt-4 text-sm">
+              {inEvidenza.potenza != null && (
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Potenza</div>
+                  <div className="mt-0.5 font-medium">{formatoPotenza(inEvidenza.potenza)}</div>
+                </div>
+              )}
               <div>
                 <div className="text-xs uppercase tracking-wide text-slate-500">Anno</div>
                 <div className="mt-0.5 font-medium">{inEvidenza.annoImmatricolazione}</div>
