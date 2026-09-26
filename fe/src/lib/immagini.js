@@ -86,10 +86,17 @@ export async function cercaImmagineAuto(marca, modello) {
 
 // Hook di comodo: usa lo stesso ciclo cerca/mostra in ogni pagina che serve
 // un'immagine auto (catalogo, dettaglio, hero), senza ripetere la logica.
-export function useImmagineAuto(marca, modello) {
-  const [stato, setStato] = useState({ src: null, caricamento: true })
+//
+// urlCaricata (opzionale): quando l'amministratore ha caricato una foto vera
+// dell'esemplare, ha sempre la precedenza e non si cerca nient'altro.
+export function useImmagineAuto(marca, modello, urlCaricata) {
+  const [stato, setStato] = useState({ src: urlCaricata ?? null, caricamento: !urlCaricata })
 
   useEffect(() => {
+    if (urlCaricata) {
+      setStato({ src: urlCaricata, caricamento: false })
+      return
+    }
     let annullato = false
     setStato({ src: null, caricamento: true })
     cercaImmagineAuto(marca, modello).then((src) => {
@@ -100,7 +107,7 @@ export function useImmagineAuto(marca, modello) {
     return () => {
       annullato = true
     }
-  }, [marca, modello])
+  }, [marca, modello, urlCaricata])
 
   return stato
 }

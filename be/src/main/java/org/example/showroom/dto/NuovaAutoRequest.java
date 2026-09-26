@@ -19,7 +19,6 @@ public record NuovaAutoRequest(
         @NotNull @Positive Integer potenza,
         @NotNull @DecimalMin(value = "0.00", inclusive = false) @Digits(integer = 8, fraction = 2) BigDecimal prezzo,
         @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal prezzoAcquisto,
-        @NotBlank String descrizione,
-        String path
+        @NotBlank String descrizione
 ) {
 }

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { api } from '@/lib/api'
 import { alimentazione, euro, km } from '@/lib/formato'
 import { useImmagineAuto } from '@/lib/immagini'
 import { useState } from 'react'
@@ -8,10 +9,10 @@ import { useState } from 'react'
 // dell'amministratore, non piu' un calcolo sulla data di creazione.
 const ETICHETTE = { NUOVO: 'Nuovo', DISPONIBILE: 'Disponibile' }
 
-// La foto arriva da Wikipedia (vedi lib/immagini.js): reale e senza filigrana
-// quando la trova, un segnaposto elegante altrimenti. Mai un'immagine rotta.
+// Foto vera se l'admin l'ha caricata, altrimenti una generica del modello
+// cercata in automatico (vedi lib/immagini.js). Mai un'immagine rotta.
 export default function AutoCard({ auto, preferito, onToggleFavorite }) {
-  const { src, caricamento } = useImmagineAuto(auto.marca, auto.modello)
+  const { src, caricamento } = useImmagineAuto(auto.marca, auto.modello, auto.haFoto ? api.urlFoto(auto.id) : null)
   const [immagineFallita, setImmagineFallita] = useState(false)
 
   return (

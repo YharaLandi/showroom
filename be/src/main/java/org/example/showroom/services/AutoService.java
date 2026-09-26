@@ -14,8 +14,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Year;
 import java.util.Map;
@@ -37,6 +39,8 @@ public class AutoService {
             "potenza", "potenza",
             "createdAt", "createdAt");
     private static final Sort SORT_PREDEFINITO = Sort.by(Sort.Direction.DESC, "createdAt");
+
+    private static final long FOTO_DIMENSIONE_MASSIMA = 30L * 1024 * 1024;
 
     private final AutoRepository autoRepository;
     private final MarcaService marcaService;
@@ -94,7 +98,6 @@ public class AutoService {
         auto.setPrezzo(r.prezzo());
         auto.setPrezzoAcquisto(r.prezzoAcquisto());
         auto.setDescrizione(r.descrizione().trim());
-        auto.setPath(r.path());
         // Nasce sempre BOZZA: si pubblica con una modifica esplicita dello stato
         auto.setStato(StatoAuto.BOZZA);
         autoRepository.save(auto);
@@ -127,9 +130,62 @@ public class AutoService {
                 eventi.publishEvent(new AutoVendutaEvent(auto.getId()));
             }
         }
-        if (r.path() != null) auto.setPath(r.path());
 
         return AutoAdminResponse.of(auto);
+    }
+
+    /**
+     * Il formato si riconosce dai byte veri del file (magic number), non dal
+     * Content-Type dichiarato dal client: quello lo decide il browser che ha
+     * inviato la richiesta, e si puo' falsificare banalmente.
+     */
+    @Transactional
+    public AutoAdminResponse caricaFoto(UUID id, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File mancante o vuoto");
+        }
+        if (file.getSize() > FOTO_DIMENSIONE_MASSIMA) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Il file supera i 30MB");
+        }
+        byte[] contenuto;
+        try {
+            contenuto = file.getBytes();
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File non leggibile");
+        }
+        String tipo = tipoImmagine(contenuto);
+        if (tipo == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Formato non supportato: solo PNG, JPEG o WEBP");
+        }
+
+        Auto auto = trova(id);
+        auto.setFoto(contenuto);
+        auto.setFotoContentType(tipo);
+        return AutoAdminResponse.of(auto);
+    }
+
+    @Transactional(readOnly = true)
+    public FotoAuto foto(UUID id) {
+        Auto auto = trova(id);
+        if (auto.getFoto() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Foto non caricata");
+        }
+        return new FotoAuto(auto.getFoto(), auto.getFotoContentType());
+    }
+
+    private static String tipoImmagine(byte[] b) {
+        if (b.length >= 8 && (b[0] & 0xFF) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G'
+                && b[4] == 0x0D && b[5] == 0x0A && b[6] == 0x1A && b[7] == 0x0A) {
+            return "image/png";
+        }
+        if (b.length >= 3 && (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8 && (b[2] & 0xFF) == 0xFF) {
+            return "image/jpeg";
+        }
+        if (b.length >= 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F'
+                && b[8] == 'W' && b[9] == 'E' && b[10] == 'B' && b[11] == 'P') {
+            return "image/webp";
+        }
+        return null;
     }
 
     /**

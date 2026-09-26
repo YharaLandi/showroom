@@ -25,13 +25,13 @@ public record AutoAdminResponse(
         BigDecimal prezzoAcquisto,
         String descrizione,
         StatoAuto stato,
-        String path,
+        boolean haFoto,
         Instant createdAt
 ) {
     public static AutoAdminResponse of(Auto a) {
         return new AutoAdminResponse(a.getId(), a.getTelaio(), a.getMarca().getId(), a.getMarca().getNome(),
                 a.getModello(), a.getAnnoImmatricolazione().getValue(), a.getChilometraggio(),
                 a.getAlimentazione(), a.getCilindrata(), a.getPotenza(), a.getPrezzo(), a.getPrezzoAcquisto(),
-                a.getDescrizione(), a.getStato(), a.getPath(), a.getCreatedAt());
+                a.getDescrizione(), a.getStato(), a.getFoto() != null, a.getCreatedAt());
     }
 }

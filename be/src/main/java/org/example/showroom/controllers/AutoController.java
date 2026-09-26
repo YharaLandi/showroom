@@ -7,8 +7,11 @@ import org.example.showroom.services.AutoService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -71,5 +74,23 @@ public class AutoController {
     @PatchMapping("/{id}/prezzo")
     public AutoAdminResponse cambiaPrezzo(@PathVariable UUID id, @Valid @RequestBody CambioPrezzoRequest request) {
         return autoService.cambiaPrezzo(id, request);
+    }
+
+    // ---------- foto ----------
+
+    @PreAuthorize("hasAnyRole('Admin', 'SuperUser')")
+    @PostMapping("/{id}/foto")
+    public AutoAdminResponse caricaFoto(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
+        return autoService.caricaFoto(id, file);
+    }
+
+    // Pubblica: e' la stessa immagine che finisce nel catalogo che chiunque puo' sfogliare
+    @PreAuthorize("permitAll()")
+    @GetMapping("/{id}/foto")
+    public ResponseEntity<byte[]> foto(@PathVariable UUID id) {
+        FotoAuto foto = autoService.foto(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(foto.contentType()))
+                .body(foto.contenuto());
     }
 }

@@ -150,6 +150,26 @@ cambiare condizioni, come gia' successo con altre API di terze parti valutate
 per il progetto (ricerca immagini: diversi servizi gratuiti provati erano
 morti, con filigrana, o non coprivano i modelli europei).
 
+### Foto dell'auto salvata nel database, non su disco
+
+L'amministratore puo' caricare una foto vera dell'auto (`POST /api/auto/{id}/foto`,
+PNG/JPEG/WEBP, max 30MB). Il formato si riconosce dai primi byte del file (il
+"magic number", es. `0x89 PNG` per un PNG), non dal `Content-Type` dichiarato
+dal client: quello lo decide il browser che manda la richiesta, e si falsifica
+banalmente.
+
+La foto e' salvata come `bytea` direttamente nel database (colonne `foto` e
+`foto_content_type` su `Auto`), non su disco: su Render il filesystem del
+container e' effimero e viene ricreato a ogni deploy (nessun volume persistente
+in `render.yaml`), quindi un file scritto su disco andrebbe perso al primo
+riavvio. Il database invece persiste, senza introdurre ne' un servizio di
+storage esterno ne' un disco a pagamento.
+
+Se l'amministratore non carica nulla, `AutoResponse`/`AutoAdminResponse`
+restituiscono `haFoto: false` e il frontend mostra comunque una foto generica
+del modello, cercata in automatico (vedi sopra). Appena una foto vera viene
+caricata ha sempre la precedenza (`fe/src/lib/immagini.js`).
+
 ## Avvio in locale
 
 1. PostgreSQL sulla 5432 e database creato:

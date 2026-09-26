@@ -13,6 +13,18 @@ const AUTO_VUOTA = {
 
 const ALIMENTAZIONI = ['BENZINA', 'DIESEL', 'GPL', 'METANO', 'IBRIDA', 'ELETTRICA']
 
+const FORMATI_FOTO = ['image/png', 'image/jpeg', 'image/webp']
+const FOTO_DIMENSIONE_MASSIMA = 30 * 1024 * 1024
+
+// Controllo lato client: comodo per un errore immediato, ma non sostituisce
+// quello del backend (che guarda i byte veri del file, non il Content-Type
+// dichiarato dal browser).
+function erroreFoto(file) {
+  if (!FORMATI_FOTO.includes(file.type)) return 'Formato non supportato: solo PNG, JPEG o WEBP.'
+  if (file.size > FOTO_DIMENSIONE_MASSIMA) return 'Il file supera i 30MB.'
+  return null
+}
+
 // L'ordine e' quello del ciclo di vita naturale di un'auto: bozza -> pubblicata
 // (nuovo o disponibile) -> venduta. Nuovo e disponibile non sono in sequenza
 // tra loro: e' l'amministratore a scegliere quando un'auto non e' piu' "nuovo".
@@ -34,6 +46,7 @@ export default function AdminAuto() {
   const [errore, setErrore] = useState(null)
   const [esito, setEsito] = useState(null)
   const [nuova, setNuova] = useState(AUTO_VUOTA)
+  const [nuovaFoto, setNuovaFoto] = useState(null)
   const [mostraForm, setMostraForm] = useState(false)
   const [nuovaMarca, setNuovaMarca] = useState('')
   const [prezzi, setPrezzi] = useState({})
@@ -68,8 +81,15 @@ export default function AdminAuto() {
 
   async function creaAuto(e) {
     e.preventDefault()
+    if (nuovaFoto) {
+      const errore = erroreFoto(nuovaFoto)
+      if (errore) {
+        setEsito({ tipo: 'errore', testo: errore })
+        return
+      }
+    }
     try {
-      await api.nuovaAuto({
+      const creata = await api.nuovaAuto({
         ...nuova,
         annoImmatricolazione: Number(nuova.annoImmatricolazione),
         chilometraggio: Number(nuova.chilometraggio),
@@ -79,12 +99,33 @@ export default function AdminAuto() {
         prezzo: Number(nuova.prezzo),
         prezzoAcquisto: nuova.prezzoAcquisto === '' ? null : Number(nuova.prezzoAcquisto),
       })
+      if (nuovaFoto) {
+        // L'auto e' gia' salvata: se la foto fallisce non si perde il resto,
+        // resta solo da ricaricarla dalla riga della tabella.
+        await api.caricaFotoAuto(creata.id, nuovaFoto)
+      }
       setNuova(AUTO_VUOTA)
+      setNuovaFoto(null)
       setMostraForm(false)
       setEsito({ tipo: 'ok', testo: 'Auto creata come bozza. Cambia lo stato quando è pronta.' })
       carica()
     } catch (err) {
       setEsito({ tipo: 'errore', testo: err.stato === 409 ? 'Telaio già presente.' : err.message })
+    }
+  }
+
+  async function caricaFoto(auto, file) {
+    const errore = erroreFoto(file)
+    if (errore) {
+      setEsito({ tipo: 'errore', testo: errore })
+      return
+    }
+    try {
+      await api.caricaFotoAuto(auto.id, file)
+      setEsito({ tipo: 'ok', testo: 'Foto caricata.' })
+      carica()
+    } catch (err) {
+      setEsito({ tipo: 'errore', testo: err.message })
     }
   }
 
@@ -280,6 +321,15 @@ export default function AdminAuto() {
             onChange={campo('descrizione')}
             required
           />
+          <label className="block text-xs font-mono uppercase tracking-wider text-app-muted sm:col-span-2">
+            Foto (opzionale, PNG/JPEG/WEBP, max 30MB)
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(e) => setNuovaFoto(e.target.files[0] ?? null)}
+              className={`${input} mt-1 block w-full normal-case tracking-normal`}
+            />
+          </label>
           <button className="rounded-lg bg-app-fg px-3 py-2 font-mono text-xs uppercase tracking-wider text-white hover:bg-app-fg-hover sm:col-span-2">
             Crea come bozza
           </button>
@@ -342,6 +392,19 @@ export default function AdminAuto() {
               >
                 Cambia prezzo
               </button>
+              <label className="cursor-pointer rounded-lg border border-app-border px-3 py-1.5 font-mono text-xs uppercase tracking-wider hover:border-app-fg">
+                {auto.haFoto ? 'Cambia foto' : 'Carica foto'}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files[0]
+                    e.target.value = ''
+                    if (file) caricaFoto(auto, file)
+                  }}
+                />
+              </label>
             </div>
           </div>
         ))}

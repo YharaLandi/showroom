@@ -30,7 +30,7 @@ public record AutoResponse(
         Integer potenza,
         BigDecimal prezzo,
         String descrizione,
-        String path,
+        boolean haFoto,
         StatoAuto stato,
         Instant createdAt
 ) {
@@ -38,6 +38,6 @@ public record AutoResponse(
         return new AutoResponse(a.getId(), a.getTelaio(), a.getMarca().getId(), a.getMarca().getNome(),
                 a.getModello(), a.getAnnoImmatricolazione().getValue(), a.getChilometraggio(),
                 a.getAlimentazione(), a.getCilindrata(), a.getPotenza(), a.getPrezzo(), a.getDescrizione(),
-                a.getPath(), a.getStato(), a.getCreatedAt());
+                a.getFoto() != null, a.getStato(), a.getCreatedAt());
     }
 }

@@ -74,8 +74,15 @@ public class Auto {
     @Column(nullable = false, length = 20)
     private StatoAuto stato = StatoAuto.BOZZA;
 
-    // Percorso della foto (NULL se non caricata)
-    private String path;
+    // Foto caricata dall'amministratore, salvata come bytea: niente disco, che
+    // su Render e' effimero (il container riparte da zero a ogni deploy).
+    // NULL se non ancora caricata: il frontend mostra una foto generica cercata
+    // in automatico (vedi fe/src/lib/immagini.js).
+    @Column(columnDefinition = "bytea")
+    private byte[] foto;
+
+    @Column(name = "foto_content_type", length = 20)
+    private String fotoContentType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

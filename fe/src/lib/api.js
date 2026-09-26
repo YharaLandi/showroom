@@ -26,10 +26,13 @@ export class ErroreApi extends Error {
 
 async function chiama(percorso, opzioni = {}, giaRiprovato = false) {
   const token = leggiToken()
+  // Con un body FormData (upload file) niente Content-Type: lo imposta il
+  // browser da solo, con il boundary giusto. Impostarlo a mano rompe il parsing.
+  const isFormData = opzioni.body instanceof FormData
   const risposta = await fetch(`${BASE}${percorso}`, {
     ...opzioni,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...opzioni.headers,
     },
@@ -105,6 +108,12 @@ export const api = {
   modificaAuto: (id, dati) => chiama(`/api/auto/${id}`, { method: 'PATCH', ...corpo(dati) }),
   cambiaPrezzo: (id, prezzo) => chiama(`/api/auto/${id}/prezzo`, { method: 'PATCH', ...corpo({ prezzo }) }),
   nuovaMarca: (nome) => chiama('/api/marche', { method: 'POST', ...corpo({ nome }) }),
+  caricaFotoAuto: (id, file) => {
+    const dati = new FormData()
+    dati.append('file', file)
+    return chiama(`/api/auto/${id}/foto`, { method: 'POST', body: dati })
+  },
+  urlFoto: (id) => `${BASE}/api/auto/${id}/foto`,
 
   // ---------- preferiti ----------
   preferiti: (pagina = 0) => chiama(`/api/preferiti?page=${pagina}&size=20`),

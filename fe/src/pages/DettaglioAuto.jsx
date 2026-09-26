@@ -17,7 +17,7 @@ export default function DettaglioAuto() {
   // Prima dei return anticipati qui sotto: gli hook non possono essere
   // condizionali. Con auto ancora null la guardia dentro cercaImmagineAuto
   // evita la chiamata di rete finche' non arriva davvero.
-  const immagine = useImmagineAuto(auto?.marca, auto?.modello)
+  const immagine = useImmagineAuto(auto?.marca, auto?.modello, auto?.haFoto ? api.urlFoto(auto.id) : null)
 
   useEffect(() => {
     api

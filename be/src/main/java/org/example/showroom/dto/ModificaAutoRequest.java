@@ -22,7 +22,6 @@ public record ModificaAutoRequest(
         @Positive Integer potenza,
         @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal prezzoAcquisto,
         String descrizione,
-        StatoAuto stato,
-        String path
+        StatoAuto stato
 ) {
 }
