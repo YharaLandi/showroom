@@ -62,7 +62,10 @@ public class AvvisoService {
     }
 
     /**
-     * Cambiare la soglia rimette l'avviso in attesa.
+     * Cambiare la soglia rimette l'avviso in attesa, sia per il traguardo esatto
+     * che per la fascia (che dipende dalla soglia: cambiandola, cambia anche la
+     * fascia di riferimento). "vendutaInviata" invece non si tocca: non dipende
+     * dal prezzo scelto dall'utente, dipende solo dall'auto essere stata venduta.
      *
      * Chi ha gia' ricevuto la mail a 15.000 e scende a 12.000 sta chiedendo
      * un'altra cosa, e va avvisato di nuovo quando il prezzo arrivera' li'.
@@ -72,6 +75,7 @@ public class AvvisoService {
         Avviso avviso = trovaDiProprieta(userId, avvisoId);
         avviso.setSoglia(r.soglia());
         avviso.setInviato(false);
+        avviso.setFasciaInviata(false);
         avviso.setAttivo(true);
         avviso.setTokenDisattivazione(null);
         return AvvisoResponse.of(avviso);

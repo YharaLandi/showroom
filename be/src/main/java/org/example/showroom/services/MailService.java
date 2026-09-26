@@ -42,7 +42,7 @@ public class MailService {
             MimeMessageHelper helper = new MimeMessageHelper(messaggio, "UTF-8");
             helper.setFrom(mittente);
             helper.setTo(n.email());
-            helper.setSubject("Prezzo sceso: " + n.marca() + " " + n.modello());
+            helper.setSubject(oggetto(n));
             helper.setText(corpo(n), true);
             mailSender.send(messaggio);
             // Nei log l'avviso, mai l'indirizzo: i log di Render li legge chiunque
@@ -66,29 +66,50 @@ public class MailService {
         return messaggio == null ? "(nessun dettaglio)" : EMAIL.matcher(messaggio).replaceAll("[email]");
     }
 
+    private String oggetto(NotificaAvviso n) {
+        return switch (n.tipo()) {
+            case SOGLIA -> "Prezzo sceso: " + n.marca() + " " + n.modello();
+            case FASCIA -> "Ci siamo quasi: " + n.marca() + " " + n.modello();
+            case VENDUTA -> "Venduta: " + n.marca() + " " + n.modello();
+        };
+    }
+
     // Ogni valore passa da Html.escape: nome e modello sono testo scritto da qualcuno
     private String corpo(NotificaAvviso n) {
         String link = baseUrlFrontend + "/avvisi/disattiva?token=" + n.token();
+        String messaggioCentrale = switch (n.tipo()) {
+            case SOGLIA -> """
+                    <p>la <strong>%s %s</strong> che stavi seguendo e' scesa a <strong>%s</strong>,
+                       sotto la soglia di %s che avevi indicato.</p>
+                    """.formatted(
+                    Html.escape(n.marca()), Html.escape(n.modello()),
+                    Html.escape(euro(n.prezzo())), Html.escape(euro(n.soglia())));
+            case FASCIA -> """
+                    <p>la <strong>%s %s</strong> che stavi seguendo e' scesa a <strong>%s</strong>:
+                       sei entrato nella fascia di prezzo della tua soglia (%s). Non e' ancora
+                       arrivata al traguardo che avevi fissato, ma non manca molto.</p>
+                    """.formatted(
+                    Html.escape(n.marca()), Html.escape(n.modello()),
+                    Html.escape(euro(n.prezzo())), Html.escape(euro(n.soglia())));
+            case VENDUTA -> """
+                    <p>la <strong>%s %s</strong> che stavi seguendo e' stata venduta.
+                       Se la stavi ancora considerando, purtroppo non e' piu' disponibile.</p>
+                    """.formatted(Html.escape(n.marca()), Html.escape(n.modello()));
+        };
+
         return """
                 <!doctype html>
                 <html lang="it">
                 <body style="font-family: system-ui, sans-serif; color: #0f172a;">
                   <p>Ciao %s,</p>
-                  <p>la <strong>%s %s</strong> che stavi seguendo e' scesa a <strong>%s</strong>,
-                     sotto la soglia di %s che avevi indicato.</p>
+                  %s
                   <p><a href="%s">Non avvisarmi piu' per questa auto</a></p>
                   <p style="color: #64748b; font-size: 12px;">
                      Ricevi questo messaggio perche' hai fissato una soglia di prezzo su ShowRoom.
                   </p>
                 </body>
                 </html>
-                """.formatted(
-                Html.escape(n.nome()),
-                Html.escape(n.marca()),
-                Html.escape(n.modello()),
-                Html.escape(euro(n.prezzo())),
-                Html.escape(euro(n.soglia())),
-                Html.escape(link));
+                """.formatted(Html.escape(n.nome()), messaggioCentrale, Html.escape(link));
     }
 
     private static String euro(BigDecimal importo) {

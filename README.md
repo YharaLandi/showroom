@@ -59,27 +59,52 @@ altro utente risponde 404, non 403.
 
 ## Come parte una mail di avviso
 
+Un avviso ha **tre traguardi indipendenti**, ciascuno con il suo segno "gia'
+inviato" e la sua mail: la fascia di mille che contiene la soglia, la soglia
+esatta, e la vendita dell'auto. Ogni segno si alza una volta sola e non torna
+mai indietro.
+
 1. L'amministratore salva un prezzo piu' basso. `AutoService` pubblica
    `PrezzoRibassatoEvent` e la richiesta HTTP si chiude subito.
 2. `AvvisoListener` lo riceve con `@TransactionalEventListener(AFTER_COMMIT)` e
    `@Async`: **dopo** il commit, e su un thread suo. Se il salvataggio fallisce
    non parte niente, e chi ha salvato non resta ad aspettare Gmail.
-3. `daNotificare` cerca gli avvisi attraversati: `soglia < prezzoVecchio AND
-   soglia >= prezzoNuovo`. Chi era gia' sotto non rientra, quindi riabbassare
-   ancora il prezzo non manda una seconda mail.
-4. Il segno si prende con un solo UPDATE condizionato:
-   `SET inviato = true WHERE id = ? AND inviato = false`. Fra due modifiche
-   ravvicinate, solo la richiesta che aggiorna davvero la riga ottiene 1 e
-   spedisce; l'altra ottiene 0 e si ferma.
-5. Nel link c'e' un token casuale di 32 byte, non l'id dell'avviso, e a database
+3. Due query indipendenti cercano gli avvisi attraversati:
+   - `daNotificare`: `soglia < prezzoVecchio AND soglia >= prezzoNuovo`
+     (soglia esatta raggiunta);
+   - `daNotificarePerFascia`: `FLOOR(soglia / 1000) * 1000 + 1000 <
+     prezzoVecchio AND ... >= prezzoNuovo` (il prezzo e' appena entrato nella
+     fascia di mille della soglia, es. soglia 4500 -> avviso anticipato appena
+     si scende sotto 5000). La fascia e' fissa rispetto alla soglia scelta, non
+     al prezzo di partenza dell'auto, e non si ricalcola scendendo attraverso
+     piu' fasce.
+   Chi era gia' sotto la fascia o la soglia non rientra, quindi riabbassare
+   ancora il prezzo non manda una seconda mail per lo stesso traguardo; le due
+   mail (fascia e soglia) restano pero' indipendenti fra loro.
+4. Il segno si prende con un solo UPDATE condizionato per traguardo:
+   `SET inviato = true WHERE id = ? AND inviato = false` (idem per
+   `fascia_inviata`). Fra due modifiche ravvicinate, solo la richiesta che
+   aggiorna davvero la riga ottiene 1 e spedisce; l'altra ottiene 0 e si ferma.
+5. Quando l'amministratore segna un'auto come `VENDUTA`, `AutoService` pubblica
+   `AutoVendutaEvent` (solo se lo stato precedente non era gia' `VENDUTA`).
+   `AvvisoListener.allaVendita` prende in carico chi ha ancora un avviso attivo
+   su quell'auto (`venduta_inviata = false`) e lo avvisa che non e' piu'
+   disponibile, cosi' non resta ad aspettare un ribasso che non arrivera' piu'.
+6. Nel link c'e' un token casuale di 32 byte, non l'id dell'avviso, e a database
    ne resta solo l'hash. Vale una volta sola: dopo l'uso viene cancellato.
 
-**Se Gmail non risponde, l'avviso torna da inviare** (`rimettiInAttesa`). Fra
-perdere la mail e rischiare un doppione si e' scelto il doppione: una soglia di
-prezzo serve a non lasciarsi sfuggire l'occasione, e un avviso consumato da un
-invio fallito non avviserebbe mai piu' nessuno, in silenzio. Il doppione capita
-solo se Gmail ha accettato il messaggio ma ha risposto con un errore, ed e' un
+**Se Gmail non risponde, l'avviso torna da inviare** (`rimettiInAttesa`, per il
+solo traguardo che ha fallito: soglia, fascia o vendita). Fra perdere la mail e
+rischiare un doppione si e' scelto il doppione: una soglia di prezzo serve a
+non lasciarsi sfuggire l'occasione, e un avviso consumato da un invio fallito
+non avviserebbe mai piu' nessuno, in silenzio. Il doppione capita solo se
+Gmail ha accettato il messaggio ma ha risposto con un errore, ed e' un
 fastidio, non un danno.
+
+Cambiare la soglia di un avviso rimette in attesa sia `inviato` che
+`fascia_inviata` (la fascia dipende dalla soglia scelta). `venduta_inviata`
+invece non si tocca mai in quel punto: non dipende dal prezzo, dipende solo
+dall'auto essere stata venduta o no.
 
 Con `MAIL_USERNAME` vuoto l'invio e' disattivato e gli avvisi **non** vengono
 consumati: restano in attesa di una configurazione valida.
@@ -104,6 +129,26 @@ Il meccanismo di sicurezza descritto sopra (`rimettiInAttesa`) e' proprio
 quello che tiene l'avviso "in attesa" invece di perderlo quando questo accade:
 appena l'invio torna possibile, il primo ribasso di prezzo successivo lo
 consegna.
+
+### Lista di marche curata invece di un'API esterna
+
+Per far scegliere una marca gia' nota all'amministratore, senza pero' impedirgli
+di aggiungerne una nuova, si era valutata un'API esterna con l'elenco completo
+delle marche automobilistiche. Il registro americano NHTSA vPIC, filtrato sui
+soli veicoli di tipo "car" (`GetMakesForVehicleType/car`), e' gratuito e senza
+chiave, ma resta un registro di immatricolazioni USA: mancano marche europee
+comuni per un salone italiano (Skoda, SEAT, Citroen, Land Rover, Jeep), mentre
+compaiono decine di voci irrilevanti (piccoli produttori di kit-car, carrozzerie
+artigianali americane).
+
+Per questo si e' scelto un elenco statico e curato (`fe/src/lib/marcheNote.js`,
+circa 70 marche), usato solo come suggerimento nel campo "Nuova marca" tramite
+un `<datalist>` HTML. Il campo resta di testo libero: l'amministratore puo'
+sempre scrivere una marca non presente in elenco, per quando ne esce una nuova
+sul mercato. Niente dipendenza da un servizio esterno che puo' sparire o
+cambiare condizioni, come gia' successo con altre API di terze parti valutate
+per il progetto (ricerca immagini: diversi servizi gratuiti provati erano
+morti, con filigrana, o non coprivano i modelli europei).
 
 ## Avvio in locale
 

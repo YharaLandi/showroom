@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.showroom.dto.*;
 import org.example.showroom.entities.Auto;
 import org.example.showroom.entities.StatoAuto;
+import org.example.showroom.events.AutoVendutaEvent;
 import org.example.showroom.events.PrezzoRibassatoEvent;
 import org.example.showroom.repositories.AutoRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -117,7 +118,15 @@ public class AutoService {
         if (r.potenza() != null) auto.setPotenza(r.potenza());
         if (r.prezzoAcquisto() != null) auto.setPrezzoAcquisto(r.prezzoAcquisto());
         if (r.descrizione() != null) auto.setDescrizione(r.descrizione().trim());
-        if (r.stato() != null) auto.setStato(r.stato());
+        if (r.stato() != null) {
+            // Solo se e' una transizione vera: risegnare come venduta un'auto
+            // gia' venduta non deve avvisare una seconda volta chi la seguiva.
+            boolean diventaVenduta = r.stato() == StatoAuto.VENDUTA && auto.getStato() != StatoAuto.VENDUTA;
+            auto.setStato(r.stato());
+            if (diventaVenduta) {
+                eventi.publishEvent(new AutoVendutaEvent(auto.getId()));
+            }
+        }
         if (r.path() != null) auto.setPath(r.path());
 
         return AutoAdminResponse.of(auto);

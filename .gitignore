@@ -11,3 +11,7 @@ fe/.env.local
 .idea/
 .vscode/
 *.iml
+
+# File di lock temporanei di Word/Office
+~$*.docx
+~$*.doc

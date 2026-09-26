@@ -12,9 +12,11 @@ import java.util.UUID;
 /**
  * Lega un utente a un'auto con una soglia di prezzo.
  *
- * "inviato" e' il segno che la mail e' gia' partita: si alza una volta sola e non
- * torna mai indietro, percio' se il prezzo risale e poi riscende non parte un
- * secondo messaggio.
+ * Un avviso ha tre traguardi indipendenti, ciascuno con il suo segno "gia'
+ * inviato": la fascia di mille che contiene la soglia (es. soglia 4500 ->
+ * fascia 4000-4999, notifica appena il prezzo scende sotto 5000), la soglia
+ * esatta, e la vendita dell'auto. Ogni segno si alza una volta sola e non
+ * torna mai indietro, percio' oscillazioni successive non duplicano la mail.
  */
 @Entity
 @Table(name = "avvisi",
@@ -40,8 +42,17 @@ public class Avviso {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal soglia;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean inviato = false;
+
+    // Fascia di mille che contiene la soglia: notifica anticipata, indipendente
+    // dalla soglia esatta. Calcolata al volo da "soglia", non salvata a parte.
+    @Column(name = "fascia_inviata", nullable = false, columnDefinition = "boolean default false")
+    private boolean fasciaInviata = false;
+
+    // L'auto seguita e' stata segnata come venduta
+    @Column(name = "venduta_inviata", nullable = false, columnDefinition = "boolean default false")
+    private boolean vendutaInviata = false;
 
     // false dopo che l'utente ha usato il link di disattivazione della mail
     @Column(nullable = false)

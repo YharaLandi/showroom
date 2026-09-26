@@ -44,9 +44,13 @@ export default function Avvisi() {
     }
   }
 
+  // L'ordine conta: venduta e disattivato sono stati definitivi e vincono su
+  // tutto il resto; soglia raggiunta e' piu' avanti di "vicino alla soglia".
   function stato(a) {
+    if (a.auto.stato === 'VENDUTA') return { testo: 'Venduta', classe: 'bg-app-border text-app-muted' }
     if (!a.attivo) return { testo: 'Disattivato', classe: 'bg-app-border text-app-muted' }
-    if (a.inviato) return { testo: 'Gia' + '’' + ' avvisato', classe: 'bg-emerald-100 text-emerald-800' }
+    if (a.inviato) return { testo: 'Soglia raggiunta', classe: 'bg-emerald-100 text-emerald-800' }
+    if (a.fasciaInviata) return { testo: 'Vicino alla soglia', classe: 'bg-amber-100 text-amber-800' }
     return { testo: 'In attesa', classe: 'bg-app-accent/10 text-app-accent' }
   }
 
@@ -54,8 +58,9 @@ export default function Avvisi() {
     <div className="max-w-3xl">
       <h1 className="font-display text-2xl font-black uppercase tracking-tight">I tuoi avvisi di prezzo</h1>
       <p className="mt-1 text-sm text-app-muted">
-        Per ogni auto ricevi una sola mail, quando il prezzo scende sotto la soglia. Cambiare la
-        soglia rimette l{'’'}avviso in attesa.
+        Ricevi una mail quando il prezzo entra nella fascia di mille della tua soglia, un{'’'}altra
+        quando raggiunge esattamente la soglia, e una se l{'’'}auto viene venduta. Cambiare la soglia
+        rimette l{'’'}avviso in attesa.
       </p>
 
       <div className="mt-4">

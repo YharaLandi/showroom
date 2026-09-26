@@ -4,6 +4,7 @@ import Messaggio from '@/components/Messaggio'
 import Paginazione from '@/components/Paginazione'
 import { api } from '@/lib/api'
 import { cilindrata, euro, km, potenza } from '@/lib/formato'
+import { MARCHE_NOTE } from '@/lib/marcheNote'
 
 const AUTO_VUOTA = {
   telaio: '', marcaId: '', modello: '', annoImmatricolazione: '', chilometraggio: '',
@@ -88,8 +89,21 @@ export default function AdminAuto() {
   }
 
   async function cambiaStato(auto, stato) {
+    // Passando a venduta parte una mail a chi ha un avviso attivo su questa
+    // auto: un avviso in piu' prima di farlo scattare per sbaglio.
+    if (stato === 'VENDUTA' && auto.stato !== 'VENDUTA') {
+      const conferma = window.confirm(
+        `Segnare ${auto.marca} ${auto.modello} come venduta avvisera' via mail chi ha un avviso di prezzo attivo su questa auto. Confermi?`,
+      )
+      if (!conferma) return
+    }
     try {
       await api.modificaAuto(auto.id, { stato })
+      setEsito(
+        stato === 'VENDUTA'
+          ? { tipo: 'ok', testo: 'Auto segnata come venduta. Chi la seguiva e\' stato avvisato.' }
+          : null,
+      )
       carica()
     } catch (err) {
       setEsito({ tipo: 'errore', testo: err.message })
@@ -155,8 +169,15 @@ export default function AdminAuto() {
           placeholder="Nuova marca (es. Volkswagen)"
           value={nuovaMarca}
           onChange={(e) => setNuovaMarca(e.target.value)}
+          list="marche-suggerite"
           required
         />
+        {/* Solo un suggerimento: il campo resta di testo libero per le marche non in elenco */}
+        <datalist id="marche-suggerite">
+          {MARCHE_NOTE.map((m) => (
+            <option key={m} value={m} />
+          ))}
+        </datalist>
         <button className="rounded-lg border border-app-border px-3 py-2 font-mono text-xs uppercase tracking-wider hover:border-app-fg">
           Aggiungi marca
         </button>

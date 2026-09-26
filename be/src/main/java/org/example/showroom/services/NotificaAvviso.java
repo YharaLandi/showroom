@@ -11,9 +11,13 @@ import java.util.UUID;
  * darebbe LazyInitializationException.
  *
  * "token" e' il valore in chiaro che va nel link: a DB ne resta solo l'hash.
+ *
+ * "soglia" non serve per VENDUTA e resta null in quel caso: quella mail non
+ * parla di un prezzo raggiunto.
  */
 public record NotificaAvviso(
         UUID avvisoId,
+        TipoNotifica tipo,
         String email,
         String nome,
         String marca,

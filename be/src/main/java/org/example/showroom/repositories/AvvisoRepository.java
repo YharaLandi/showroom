@@ -50,6 +50,35 @@ public interface AvvisoRepository extends JpaRepository<Avviso, UUID> {
                               @Param("prezzoNuovo") BigDecimal prezzoNuovo);
 
     /**
+     * Avvisi che il cambio di prezzo ha appena fatto entrare nella fascia di
+     * mille della loro soglia: soglia 4500 -> fascia 4000-4999, il traguardo e'
+     * "il prezzo scende sotto 5000". Indipendente dalla soglia esatta: i due
+     * traguardi si notificano separatamente, anche se ravvicinati.
+     *
+     * FLOOR(soglia / 1000) * 1000 + 1000 e' il tetto della fascia (5000 per
+     * soglia 4500 o 4000): la stessa identica logica di attraversamento di
+     * daNotificare, applicata a un valore calcolato invece che a "soglia".
+     */
+    @EntityGraph(attributePaths = {"user", "auto", "auto.marca"})
+    @Query("""
+            SELECT a FROM Avviso a
+            WHERE a.auto.id = :autoId
+              AND a.attivo = true
+              AND a.fasciaInviata = false
+              AND (FLOOR(a.soglia / 1000) * 1000 + 1000) < :prezzoVecchio
+              AND (FLOOR(a.soglia / 1000) * 1000 + 1000) >= :prezzoNuovo
+            """)
+    List<Avviso> daNotificarePerFascia(@Param("autoId") UUID autoId,
+                                       @Param("prezzoVecchio") BigDecimal prezzoVecchio,
+                                       @Param("prezzoNuovo") BigDecimal prezzoNuovo);
+
+    // Tutti gli avvisi attivi non ancora avvisati della vendita: qui non c'e'
+    // un attraversamento da verificare, la vendita e' un evento singolo.
+    @EntityGraph(attributePaths = {"user", "auto", "auto.marca"})
+    @Query("SELECT a FROM Avviso a WHERE a.auto.id = :autoId AND a.attivo = true AND a.vendutaInviata = false")
+    List<Avviso> daNotificarePerVendita(@Param("autoId") UUID autoId);
+
+    /**
      * Prende in un colpo solo il segno che la mail e' partita. Due modifiche
      * ravvicinate non mandano due messaggi: solo la richiesta che aggiorna
      * davvero la riga ottiene 1, le altre 0 e non spediscono niente.
@@ -57,6 +86,14 @@ public interface AvvisoRepository extends JpaRepository<Avviso, UUID> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE Avviso a SET a.inviato = true WHERE a.id = :id AND a.inviato = false")
     int segnaInviato(@Param("id") UUID id);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Avviso a SET a.fasciaInviata = true WHERE a.id = :id AND a.fasciaInviata = false")
+    int segnaFasciaInviata(@Param("id") UUID id);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Avviso a SET a.vendutaInviata = true WHERE a.id = :id AND a.vendutaInviata = false")
+    int segnaVendutaInviata(@Param("id") UUID id);
 
     // Hash del token monouso del link di disattivazione, scritto insieme all'invio
     @Modifying(flushAutomatically = true, clearAutomatically = true)
@@ -72,5 +109,13 @@ public interface AvvisoRepository extends JpaRepository<Avviso, UUID> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE Avviso a SET a.inviato = false, a.tokenDisattivazione = null WHERE a.id = :id")
     int rimettiInAttesa(@Param("id") UUID id);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Avviso a SET a.fasciaInviata = false, a.tokenDisattivazione = null WHERE a.id = :id")
+    int rimettiFasciaInAttesa(@Param("id") UUID id);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Avviso a SET a.vendutaInviata = false, a.tokenDisattivazione = null WHERE a.id = :id")
+    int rimettiVendutaInAttesa(@Param("id") UUID id);
 
 }
